@@ -1,2 +1,2 @@
 # apiCuradurias
-Api for services on curadurias
+Api for services on curadurias 😎
