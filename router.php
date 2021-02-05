@@ -5,8 +5,8 @@ if(preg_match('/\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)/',$
 {
     $_GET['resource_type']=$matches[3];    
     $_GET['resource_cur']=$matches[4];
-    $_GET['resource_res']=$matches[5];
-    $_GET['resource_vig']=$matches[6];
+    $_GET['resource_data1']=$matches[5];
+    $_GET['resource_data2']=$matches[6];
     error_log(print_r($matches,1));
     require 'apicuraduria.php';
 }elseif(preg_match('/\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)/',$_SERVER["REQUEST_URI"],$matches))

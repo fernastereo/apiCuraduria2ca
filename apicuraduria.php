@@ -3,15 +3,14 @@
 // Definimos los recursos disponibles
 $allowedResourceTypes = [
   'resoluciones',
-  'radicados'
+  'resolucion',
+  'radicados',
+  'radicacion'
 ];
 
 // Validamos que el recurso este disponible
 $resourceType = $_GET['resource_type'];
 $resourceCur = $_GET['resource_cur'];
-$resourceRes = array_key_exists('resource_res', $_GET) ? $_GET['resource_res'] : null;
-$resourceVig = array_key_exists('resource_vig', $_GET) ? $_GET['resource_vig'] : null;
-
 if (!in_array($resourceType, $allowedResourceTypes)) {
   die;
 }
@@ -49,16 +48,43 @@ switch ($resourceCur) {
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-// Generamos la respuesta asumiendo que el pedido es correcto
-switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
-  case 'GET':
-    echo resolucion($resourceRes, $resourceVig);
+switch ($resourceType) {
+  case 'resolucion';
+  case 'radicacion':
+    $resourceRes = array_key_exists('resource_data1', $_GET) ? $_GET['resource_data1'] : null;
+    $resourceVig = array_key_exists('resource_data2', $_GET) ? $_GET['resource_data2'] : null;
+    // Generamos la respuesta asumiendo que el pedido es correcto
+    switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
+      case 'GET':
+        echo resolucion($resourceRes, $resourceVig);
+        break;
+      
+      default:
+        # code...
+        break;
+    }
     break;
-  
+  case 'radicados';
+  case 'resoluciones':
+    $fechaini = array_key_exists('resource_data1', $_GET) ? $_GET['resource_data1'] : null;
+    $fechafin = array_key_exists('resource_data2', $_GET) ? $_GET['resource_data2'] : null;
+    // Generamos la respuesta asumiendo que el pedido es correcto
+    switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
+      case 'GET':
+        echo resoluciones($fechaini, $fechafin);
+        break;
+      
+      default:
+        # code...
+        break;
+    }    
+    break;
   default:
     # code...
     break;
 }
+
+
 
 function resolucion($id = null, $vigencia = null){
 
@@ -74,6 +100,34 @@ function resolucion($id = null, $vigencia = null){
 
     $stmt = $con->prepare($query);
     $stmt->execute(array(':id' => $id, ':vigencia' => $vigencia ));
+    $stmt->execute();
+    if($stmt->rowCount() > 0){
+      $resoluciones = ['response' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+    }else{
+      $resoluciones = ['response' => 'error', 'message' => 'No se encontró el registro solicitado. Por favor comuniquese con nosotros a cualquiera de nuestras lineas de atención'];
+    }
+
+  } catch(PDOException $e) {
+    $resoluciones = ['response' => 'error', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage()];
+  }
+
+  return json_encode($resoluciones);
+}
+
+function resoluciones($fechaini = null, $fechafin = null){
+
+  try{
+    $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
+    $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    if (is_null($fechaini) && is_null($fechafin)) {
+      $resoluciones = ['response' => 'error', 'message' => 'Por favor especifique un rango de fechas válido'];
+    }else{
+      $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, x.resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.fecharesol between :fechaini and :fechafin order by x.fecharesol desc;";
+    }
+
+    $stmt = $con->prepare($query);
+    $stmt->execute(array(':fechaini' => $fechaini, ':fechafin' => $fechafin ));
     $stmt->execute();
     if($stmt->rowCount() > 0){
       $resoluciones = ['response' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
