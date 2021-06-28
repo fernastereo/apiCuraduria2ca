@@ -49,8 +49,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 switch ($resourceType) {
-  case 'resolucion';
-  case 'radicacion':
+  case 'resolucion':
     $resourceRes = array_key_exists('resource_data1', $_GET) ? $_GET['resource_data1'] : null;
     $resourceVig = array_key_exists('resource_data2', $_GET) ? $_GET['resource_data2'] : null;
     // Generamos la respuesta asumiendo que el pedido es correcto
@@ -64,6 +63,22 @@ switch ($resourceType) {
         break;
     }
     break;
+
+  case 'radicacion':
+    $resourceRad = array_key_exists('resource_data1', $_GET) ? $_GET['resource_data1'] : null;
+    $resourceVig = array_key_exists('resource_data2', $_GET) ? $_GET['resource_data2'] : null;
+    // Generamos la respuesta asumiendo que el pedido es correcto
+    switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
+      case 'GET':
+        echo radicacion($resourceRad, $resourceVig);
+        break;
+      
+      default:
+        # code...
+        break;
+    }
+    break;
+
   case 'radicados';
   case 'resoluciones':
     $fechaini = array_key_exists('resource_data1', $_GET) ? $_GET['resource_data1'] : null;
@@ -84,7 +99,31 @@ switch ($resourceType) {
     break;
 }
 
+function radicacion($id = null, $vigencia = null){
 
+  try{
+    $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
+    $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    if (!is_null($id) && !is_null($vigencia)) {
+      $query = "select e.radicacion, e.fecharad, e.solicitante, e.direccion, e.modalidad, e.estado from expediente e where e.idradicacion= :id and e.vigencia= :vigencia;";
+    }
+
+    $stmt = $con->prepare($query);
+    $stmt->execute(array(':id' => $id, ':vigencia' => $vigencia ));
+    $stmt->execute();
+    if($stmt->rowCount() > 0){
+      $resoluciones = ['response' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+    }else{
+      $resoluciones = ['response' => 'error', 'message' => 'No se encontró el registro solicitado. Por favor comuniquese con nosotros a cualquiera de nuestras lineas de atención'];
+    }
+
+  } catch(PDOException $e) {
+    $resoluciones = ['response' => 'error', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage()];
+  }
+
+  return json_encode($resoluciones);
+}
 
 function resolucion($id = null, $vigencia = null){
 
@@ -92,9 +131,7 @@ function resolucion($id = null, $vigencia = null){
     $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    if (is_null($id) && is_null($vigencia)) {
-      $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, x.resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente;";
-    }else{
+    if (!is_null($id) && !is_null($vigencia)) {
       $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, x.resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
     }
 
