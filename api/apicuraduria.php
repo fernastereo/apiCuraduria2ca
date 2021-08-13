@@ -247,19 +247,20 @@ function publicacion(){
       $temp_file_location = $_FILES['publicacionFile']['tmp_name']; 
   
       require '../vendor/autoload.php';
-  
+      $config = require('config.php');
+
       $s3 = new Aws\S3\S3Client([
         'region'  => 'us-west-1',
         'version' => 'latest',
         'credentials' => [
-            'key'    => "",
-            'secret' => "",
+            'key'    => $config['AWS_KEY'],
+            'secret' => $config['AWS_SECRET'],
         ]
       ]);		
   
       $result = $s3->putObject([
-        'Bucket' => 'web-curadurias',
-        'Key'    => '2bq/' . $archivo,
+        'Bucket' => $config['BUCKET'],
+        'Key'    => $GLOBALS["resourceCur"] . '/' . $archivo,
         'Body'   => 'body!',
         'SourceFile' => $temp_file_location,
         'ACL'    => 'public-read'	
