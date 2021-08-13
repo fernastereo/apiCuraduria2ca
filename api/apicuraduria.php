@@ -5,7 +5,8 @@ $allowedResourceTypes = [
   'resoluciones',
   'resolucion',
   'radicados',
-  'radicacion'
+  'radicacion',
+  'publicacion'
 ];
 
 // Validamos que el recurso este disponible
@@ -94,6 +95,21 @@ switch ($resourceType) {
         break;
     }    
     break;
+
+    case 'publicacion':
+      // Generamos la respuesta asumiendo que el pedido es correcto
+      switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
+        case 'POST':
+          echo publicacion();
+          break;
+        case 'GET':
+          echo consecutivoPublicacion();
+          break;
+        default:
+          # code...
+          break;
+      }
+      break;
   default:
     # code...
     break;
@@ -177,4 +193,83 @@ function resoluciones($fechaini = null, $fechafin = null){
   }
 
   return json_encode($resoluciones);
+}
+
+function consecutivoPublicacion(){
+
+  $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
+  $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  
+  $query = "select max(idpublicaciones) as maximo from publicaciones";
+
+  $stmt = $con->prepare($query);
+  $stmt->execute();
+  if($stmt->rowCount() > 0){
+    $consecutivo = $stmt->fetchColumn() + 1;
+  }else{
+    $consecutivo = 1;
+  }
+
+  return str_pad($consecutivo, 5, "0", STR_PAD_LEFT);
+}
+
+function publicacion(){
+  $json = file_get_contents('php://input');
+  $publicaciones[] = json_decode($json, true);
+  
+  try{
+    $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
+    $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    $idpublicaciones = consecutivoPublicacion();
+    $fecha = date('Y-m-d');
+    $fechapublicacion = $_POST["fechapublicacion"];// $publicaciones[0]['fechapublicacion'];
+    $referencia = $_POST["referencia"];//$publicaciones[0]['referencia'];
+    $archivo = "pub/{$idpublicaciones}.pdf";
+    $estado = $_POST["estado"]; //$publicaciones[0]['estado'];
+    $idtipopublicacion = 2;
+
+    if(isset($_FILES['publicacionFile'])){
+
+      $query = "insert into publicaciones (idpublicaciones, fecha, fechapublicacion, referencia, archivo, estado, idtipopublicacion) values (:idpublicaciones, :fecha, :fechapublicacion, :referencia, :archivo, :estado, :idtipopublicacion)";
+  
+      $stmt = $con->prepare($query);
+      $stmt->bindValue(':idpublicaciones', $idpublicaciones);  
+      $stmt->bindValue(':fecha', $fecha);  
+      $stmt->bindValue(':fechapublicacion', $fechapublicacion);  
+      $stmt->bindValue(':referencia', $referencia);  
+      $stmt->bindValue(':archivo', $archivo);  
+      $stmt->bindValue(':estado', $estado);  
+      $stmt->bindValue(':idtipopublicacion', $idtipopublicacion);  
+
+      $stmt->execute();
+
+      $temp_file_location = $_FILES['publicacionFile']['tmp_name']; 
+  
+      require '../vendor/autoload.php';
+  
+      $s3 = new Aws\S3\S3Client([
+        'region'  => 'us-west-1',
+        'version' => 'latest',
+        'credentials' => [
+            'key'    => "",
+            'secret' => "",
+        ]
+      ]);		
+  
+      $result = $s3->putObject([
+        'Bucket' => 'web-curadurias',
+        'Key'    => '2bq/' . $archivo,
+        'Body'   => 'body!',
+        'SourceFile' => $temp_file_location,
+        'ACL'    => 'public-read'	
+      ]);
+          
+      $publicacion = ['response' => 'success', 'message' => "Documento publicado con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
+    }
+  } catch(PDOException $e) {
+    $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
+  }
+
+  return json_encode($publicacion);
 }
