@@ -29,7 +29,7 @@ Api for services on curadurias 😎
 
 `method: get`
 
-`api/router.php/publicacion/{curaduria}`
+`api/router.php/publicaciones/{curaduria}/{fechaini}/{fechafin}`
 
 #### Enviar foto de Valla del proyecto
 
