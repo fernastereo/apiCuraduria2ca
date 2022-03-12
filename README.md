@@ -25,6 +25,12 @@ Api for services on curadurias 😎
 
 `api/router.php/publicacion/{curaduria}`
 
+    Parámetros:
+    - fechapublicacion (string)
+    - referencia (string)
+    - archivo (file)
+    - estado (integer [1|0])
+
 #### Listado de Publicaciones
 
 `method: get`
@@ -37,8 +43,22 @@ Api for services on curadurias 😎
 
 `api/router.php/valla/{curaduria}`
 
+    Parámetros:
+    - proyecto (string)
+    - vigencia (string)
+    - comentarios (string)
+    - archivo (file)
+    - email (string)
+
 #### Enviar comprobantes de pago
 
 `method: post`
 
 `api/router.php/pago/{curaduria}`
+
+    Parámetros:
+    - proyecto (string)
+    - vigencia (string)
+    - comentarios (string)
+    - archivo (file)
+    - email (string)

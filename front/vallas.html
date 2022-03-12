@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vallas Curaduria 2 Barranquilla</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+</head>
+<body class="h-100">
+    <div class="container d-flex align-items-center justify-content-center" style="height: 450px;">
+        <div class="row">
+            <div class="col">
+                <h4 class="text-center mb-4">Vallas Curaduria 2 Barranquilla</h4>
+                <form action="post">
+                    <div class="mb-3 row">
+                        <div class="col">
+                            <select class="form-select form-select-sm" aria-label=".form-select-sm example" id="vigencia">
+                                <option selected>Vigencia</option>
+                                <option value="2022">2022</option>
+                                <option value="2021">2021</option>
+                                <option value="2020">2020</option>
+                                <option value="2019">2019</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <input type="text" class="form-control form-control-sm" id="proyecto" placeholder="Proyecto" aria-label="Proyecto">
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="comentarios" class="col-sm-3 col-form-label">Comentarios:</label>
+                        <div class="col-9">
+                            <textarea class="form-control form-control-sm" id="comentarios"></textarea>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vallaFile" class="form-label">Archivo a publicar</label>
+                        <input class="form-control" type="file" id="vallaFile">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-mail:</label>
+                        <input class="form-control" type="email" id="email">
+                    </div>
+                    <button id="enviar" class="btn btn-primary">
+                        
+                        Enviar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row d-flex justify-content-center">
+            <div class="col-8">
+                <div class="text-center mt-4" id="mensajes"></div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    const proyecto = document.querySelector('#proyecto')
+    const vigencia = document.querySelector('#vigencia')
+    const comentarios = document.querySelector('#comentarios')
+    const vallaFile = document.querySelector('#vallaFile')
+    const mensajes = document.querySelector('#mensajes')
+    const email = document.querySelector('#email')
+
+    const enviar = document.querySelector('#enviar')
+    enviar.addEventListener('click', (e) =>{
+        e.preventDefault()
+        enviarDatos(vallaFile.files[0]);
+    })
+
+    const enviarDatos = (file) => {
+        const api = "http://css-sas.com/apicuradurias/api/router.php/valla/2bq";
+        
+        // Verificar el tipo de archivo
+        if(!['application/pdf', 'image/jpg', 'image/jpeg', 'image/png'].includes(file.type))
+        {
+            mensajes.innerHTML = '<div class="alert alert-danger">Solo son permitidos archivos pdf - jpg - jpeg - png</div>';
+
+            vallaFile.value = '';
+            
+            return;
+        }
+
+        // Verificar el tamaño (< 5MB)
+        if(file.size > 5 * 1024 * 1024)
+        {
+            mensajes.innerHTML = '<div class="alert alert-danger">El Archivo debe ser menor a 5 MB</div>';
+
+            vallaFile.value = '';
+            return;
+        }
+
+        enviar.innerHTML = '<span class="spinner-border spinner-border-sm mr-4" role="" aria-hidden="true"></span> Enviando...'
+        const form_data = new FormData();
+
+        form_data.append('proyecto', proyecto.value);
+        form_data.append('vigencia', vigencia.options[vigencia.selectedIndex].text);
+        form_data.append('comentarios', comentarios.value);
+        form_data.append('email', email.value);
+        form_data.append('vallaFile', file);
+        
+        fetch(api, {  
+            method:"POST",
+            body : form_data
+        }).then(function(response){
+            return response.json();
+        })
+        .then(function(responseData){
+            enviar.innerHTML = 'Enviar'
+            const url = responseData.response == 'success' ? `<a href="${responseData.url}">Ver Archivo</a></div>` : ''
+            mensajes.innerHTML = `<div class="alert alert-${responseData.response}">${responseData.message} ${url}`
+            vallaFile.value = '';
+        });
+    }
+</script>
+</html>

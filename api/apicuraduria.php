@@ -7,7 +7,9 @@ $allowedResourceTypes = [
   'radicados',
   'radicacion',
   'publicacion',
-  'publicaciones'
+  'publicaciones',
+  'valla',
+  'pago'
 ];
 
 // Validamos que el recurso este disponible
@@ -104,7 +106,7 @@ switch ($resourceType) {
         echo publicacion();
         break;
       case 'GET':
-        echo consecutivoPublicacion();
+        echo consecutivo("idpublicaciones", "publicaciones");
         break;
       default:
         # code...
@@ -127,6 +129,36 @@ switch ($resourceType) {
     }    
     break;
 
+  case 'valla':
+    // Generamos la respuesta asumiendo que el pedido es correcto
+    switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
+      case 'POST':
+        echo valla();
+        break;
+      case 'GET':
+        
+        break;
+      default:
+        # code...
+        break;
+    }
+    break;
+
+  case 'pago':
+    // Generamos la respuesta asumiendo que el pedido es correcto
+    switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
+      case 'POST':
+        echo pago();
+        break;
+      case 'GET':
+        
+        break;
+      default:
+        # code...
+        break;
+    }
+    break;
+    
   default:
     # code...
     break;
@@ -217,12 +249,12 @@ function resoluciones($fechaini = null, $fechafin = null){
   return json_encode($resoluciones);
 }
 
-function consecutivoPublicacion(){
+function consecutivo($id, $table){
 
   $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
   $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   
-  $query = "select max(idpublicaciones) as maximo from publicaciones";
+  $query = "select max($id) as maximo from $table";
 
   $stmt = $con->prepare($query);
   $stmt->execute();
@@ -243,7 +275,7 @@ function publicacion(){
     $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    $idpublicaciones = consecutivoPublicacion();
+    $idpublicaciones = consecutivo("idpublicaciones", "publicaciones");
     $fecha = date('Y-m-d');
     $fechapublicacion = $_POST["fechapublicacion"];// $publicaciones[0]['fechapublicacion'];
     $referencia = $_POST["referencia"];//$publicaciones[0]['referencia'];
@@ -323,4 +355,170 @@ function publicaciones($fechaini = null, $fechafin = null){
   }
 
   return json_encode($resoluciones);
+}
+
+function valla(){
+  $json = file_get_contents('php://input');
+  $valla[] = json_decode($json, true);
+
+  try{
+
+    $email = $_POST["email"];
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      return json_encode(['response' => 'danger', 'message' => "La dirección de correo ($email) no es válida.", 'url' => ""]);
+    }
+
+    $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
+    $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $idvalla = consecutivo("id", "vallas");
+    $fileName = basename($_FILES["vallaFile"]["name"]);
+    $fileName = str_replace(" ", "", $idvalla . $fileName);
+
+    $fecha = date('Y-m-d');
+    $proyecto = $_POST["proyecto"];
+    $vigencia = $_POST["vigencia"];
+    $comentarios = $_POST["comentarios"];
+    
+    $archivo = "vallas/{$fileName}";
+
+    if(isset($_FILES['vallaFile'])){
+
+      $query = "insert into vallas (proyecto, vigencia, comentarios, archivo, email, fecha) values (:proyecto, :vigencia, :comentarios, :archivo, :email, :fecha)";
+  
+      $stmt = $con->prepare($query);
+      $stmt->bindValue(':proyecto', $proyecto);  
+      $stmt->bindValue(':vigencia', $vigencia);  
+      $stmt->bindValue(':comentarios', $comentarios);  
+      $stmt->bindValue(':archivo', $archivo);  
+      $stmt->bindValue(':email', $email);  
+      $stmt->bindValue(':fecha', $fecha);  
+
+      $stmt->execute();
+
+      $temp_file_location = $_FILES['vallaFile']['tmp_name']; 
+  
+      require '../vendor/autoload.php';
+      $config = require('config.php');
+
+      $s3 = new Aws\S3\S3Client([
+        'region'  => 'us-west-1',
+        'version' => 'latest',
+        'credentials' => [
+            'key'    => $config['AWS_KEY'],
+            'secret' => $config['AWS_SECRET'],
+        ]
+      ]);		
+  
+      $result = $s3->putObject([
+        'Bucket' => $config['BUCKET'],
+        'Key'    => $GLOBALS["resourceCur"] . '/' . $archivo,
+        'Body'   => 'body!',
+        'SourceFile' => $temp_file_location,
+        'ACL'    => 'public-read'	
+      ]);
+      
+      $vigencia = substr($vigencia, 2, 2);
+      $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
+      $to = $config['MAILTO'];
+      $subject = '***FOTO DE VALLA RECIBIDA';
+      $message = "<h3>Se ha recibido una foto de la valla del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
+      $message .= "Enviado por: $email.<br><br>";
+      $message .= "Comentarios: $comentarios"; 
+      $headers[] = 'MIME-Version: 1.0';
+      $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
+      $headers[] = 'To: '.$to;
+      $headers[] = "From: Web Curaduria 2BQ <{$config['MAILFROM']}>";
+
+      mail($to, $subject, $message, implode("\r\n", $headers));
+      $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
+    }
+  } catch(PDOException $e) {
+    $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
+  }
+
+  return json_encode($publicacion);
+}
+
+function pago(){
+  $json = file_get_contents('php://input');
+  $pago[] = json_decode($json, true);
+
+  try{
+
+    $email = $_POST["email"];
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      return json_encode(['response' => 'danger', 'message' => "La dirección de correo ($email) no es válida.", 'url' => ""]);
+    }
+
+    $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
+    $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $idpago = consecutivo("id", "pagos");
+    $fileName = basename($_FILES["pagoFile"]["name"]);
+    $fileName = str_replace(" ", "", $idpago . $fileName);
+
+    $fecha = date('Y-m-d');
+    $proyecto = $_POST["proyecto"];
+    $vigencia = $_POST["vigencia"];
+    $comentarios = $_POST["comentarios"];
+    
+    $archivo = "pagos/{$fileName}";
+
+    if(isset($_FILES['pagoFile'])){
+
+      $query = "insert into pagos (proyecto, vigencia, comentarios, archivo, email, fecha) values (:proyecto, :vigencia, :comentarios, :archivo, :email, :fecha)";
+  
+      $stmt = $con->prepare($query);
+      $stmt->bindValue(':proyecto', $proyecto);  
+      $stmt->bindValue(':vigencia', $vigencia);  
+      $stmt->bindValue(':comentarios', $comentarios);  
+      $stmt->bindValue(':archivo', $archivo);  
+      $stmt->bindValue(':email', $email);  
+      $stmt->bindValue(':fecha', $fecha);  
+
+      $stmt->execute();
+
+      $temp_file_location = $_FILES['pagoFile']['tmp_name']; 
+  
+      require '../vendor/autoload.php';
+      $config = require('config.php');
+
+      $s3 = new Aws\S3\S3Client([
+        'region'  => 'us-west-1',
+        'version' => 'latest',
+        'credentials' => [
+            'key'    => $config['AWS_KEY'],
+            'secret' => $config['AWS_SECRET'],
+        ]
+      ]);		
+  
+      $result = $s3->putObject([
+        'Bucket' => $config['BUCKET'],
+        'Key'    => $GLOBALS["resourceCur"] . '/' . $archivo,
+        'Body'   => 'body!',
+        'SourceFile' => $temp_file_location,
+        'ACL'    => 'public-read'	
+      ]);
+      
+      $vigencia = substr($vigencia, 2, 2);
+      $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
+      $to = $config['MAILTO'];
+      $subject = '***NUEVO COMPROBANTE DE PAGO RECIBIDO';
+      $message = "<h3>Se ha recibido un nuevo comprobante de pago de expensas del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
+      $message .= "Enviado por: $email.<br><br>";
+      $message .= "Comentarios: $comentarios"; 
+      $headers[] = 'MIME-Version: 1.0';
+      $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
+      $headers[] = 'To: '.$to;
+      $headers[] = "From: Web Curaduria 2BQ <{$config['MAILFROM']}>";
+
+      mail($to, $subject, $message, implode("\r\n", $headers));
+      $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
+    }
+  } catch(PDOException $e) {
+    $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
+  }
+
+  return json_encode($publicacion);
 }
