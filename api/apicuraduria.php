@@ -197,11 +197,11 @@ function resolucion($id = null, $vigencia = null){
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     if (!is_null($id) && !is_null($vigencia)) {
-      $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, x.resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
+      $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, LPAD(x.resolucion, 4, 0) as resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
       if ($GLOBALS["resourceCur"] == '2va') {
         //pendiente: cambiar el query para VA. Debe consultar por vigencia del radicado y no por fecha de resolucion
         //probar con la 357 del 2020 (corregir la fecha) y 2021
-        $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, x.resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
+        $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, LPAD(x.resolucion, 4, 0) as resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
       }
     }
 
@@ -230,7 +230,7 @@ function resoluciones($fechaini = null, $fechafin = null){
     if (is_null($fechaini) && is_null($fechafin)) {
       $resoluciones = ['response' => 'error', 'message' => 'Por favor especifique un rango de fechas válido'];
     }else{
-      $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, x.resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.fecharesol between :fechaini and :fechafin order by x.fecharesol desc;";
+      $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, LPAD(x.resolucion, 4, 0) as resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.fecharesol between :fechaini and :fechafin order by x.fecharesol desc;";
     }
 
     $stmt = $con->prepare($query);
