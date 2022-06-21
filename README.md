@@ -62,3 +62,15 @@ Api for services on curadurias 😎
     - comentarios (string)
     - archivo (file)
     - email (string)
+
+#### Registrar PQR
+
+`method: post`
+
+`api/router.php/pqr/{curaduria}`
+
+    Parámetros:
+    - nombre (string)
+    - email (string)
+    - asunto (string)
+    - comentario (string)

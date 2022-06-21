@@ -9,7 +9,8 @@ $allowedResourceTypes = [
   'publicacion',
   'publicaciones',
   'valla',
-  'pago'
+  'pago',
+  'pqr'
 ];
 
 // Validamos que el recurso este disponible
@@ -33,11 +34,15 @@ switch ($resourceCur) {
     $DB = 'curad2bq';
     $USER = 'usuariocurad';
     $PASS = '12345678';
+    $MAILTO = 'info@curaduria2barranquilla.com';
+    $MAILFROM = "info@curaduria2barranquilla.com";
     break;
   case '1ca':
     $DB = 'curad1ca';
     $USER = 'consulta1ca';
     $PASS = 'aA0987!1';
+    $MAILTO = 'informacion@curaduria1cartagena.com';
+    $MAILFROM = "informacion@curaduria1cartagena.com";
     break;
   case '2va':
     $DB = 'curaduria2va';
@@ -158,7 +163,20 @@ switch ($resourceType) {
         break;
     }
     break;
-    
+  
+  case 'pqr':
+    switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
+      case 'POST':
+        echo pqr();
+        break;
+      case 'GET':
+        
+        break;
+      default:
+        # code...
+        break;
+    }
+    break;
   default:
     # code...
     break;
@@ -420,7 +438,7 @@ function valla(){
       
       $vigencia = substr($vigencia, 2, 2);
       $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
-      $to = $config['MAILTO'];
+      $to = $GLOBALS['MAILTO'];
       $subject = '***FOTO DE VALLA RECIBIDA';
       $message = "<h3>Se ha recibido una foto de la valla del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
       $message .= "Enviado por: $email.<br><br>";
@@ -428,7 +446,7 @@ function valla(){
       $headers[] = 'MIME-Version: 1.0';
       $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
       $headers[] = 'To: '.$to;
-      $headers[] = "From: Web Curaduria 2BQ <{$config['MAILFROM']}>";
+      $headers[] = "From: Web Curaduria 2BQ <{$GLOBALS['MAILFROM']}>";
 
       mail($to, $subject, $message, implode("\r\n", $headers));
       $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
@@ -503,7 +521,7 @@ function pago(){
       
       $vigencia = substr($vigencia, 2, 2);
       $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
-      $to = $config['MAILTO'];
+      $to = $GLOBALS['MAILTO'];
       $subject = '***NUEVO COMPROBANTE DE PAGO RECIBIDO';
       $message = "<h3>Se ha recibido un nuevo comprobante de pago de expensas del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
       $message .= "Enviado por: $email.<br><br>";
@@ -511,7 +529,7 @@ function pago(){
       $headers[] = 'MIME-Version: 1.0';
       $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
       $headers[] = 'To: '.$to;
-      $headers[] = "From: Web Curaduria 2BQ <{$config['MAILFROM']}>";
+      $headers[] = "From: Web Curaduria 2BQ <{$GLOBALS['MAILFROM']}>";
 
       mail($to, $subject, $message, implode("\r\n", $headers));
       $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
@@ -522,3 +540,65 @@ function pago(){
 
   return json_encode($publicacion);
 }
+
+function pqr(){
+  // $json = file_get_contents('php://input');
+  // $pago[] = json_decode($json, true);
+  try{
+
+    $email = $_POST["email"];
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      return json_encode(['response' => 'danger', 'message' => "La dirección de correo ($email) no es válida.", 'url' => ""]);
+    }
+
+    $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
+    $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    //$idpago = consecutivo("id", "pagos");
+    //$fileName = basename($_FILES["pagoFile"]["name"]);
+    //$fileName = str_replace(" ", "", $idpago . $fileName);
+
+    $fecharecibido = date('Y-m-d');
+    $nombre = $_POST["nombre"];
+    $asunto = $_POST["asunto"];
+    $comentario = $_POST["comentario"];
+    
+    // $archivo = "pagos/{$fileName}";
+
+
+    $query = "insert into pqr (nombre, email, asunto, comentario, fecharecibido) values (:nombre, :email, :asunto, :comentario, :fecharecibido)";
+
+    $stmt = $con->prepare($query);
+    $stmt->bindValue(':nombre', $nombre);  
+    $stmt->bindValue(':email', $email);  
+    $stmt->bindValue(':asunto', $asunto);  
+    $stmt->bindValue(':comentario', $comentario);  
+    $stmt->bindValue(':fecharecibido', $fecharecibido);  
+
+    $stmt->execute();
+
+    // $temp_file_location = $_FILES['pagoFile']['tmp_name']; 
+
+    // require '../vendor/autoload.php';
+    // $config = require('config.php');
+    
+    $to = $GLOBALS['MAILTO'];
+    $subject = '***NUEVO PQR RECIBIDO';
+    $message = "<h3>Se ha recibido un nuevo PQR a traves de la pagina web.</h3><br><br>El mensaje recibido es el siguiente:<br><br><h4>Asunto: $asunto</h4><br>$comentario<br><br>";
+    $message .= "Enviado por: $nombre<br>E-mail: $email.<br><br>";
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
+    $headers[] = 'To: ' . $to;
+    $headers[] = "From: Web Curaduria 1 Cartagena <{$GLOBALS['MAILFROM']}>";
+
+    mail($to, $subject, $message, implode("\r\n", $headers));    
+    
+    $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito."];
+
+  } catch(PDOException $e) {
+    $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
+  }
+
+  return json_encode($publicacion);
+}
+
