@@ -196,7 +196,7 @@ function resolucion($id = null, $vigencia = null)
     if (!is_null($id) && !is_null($vigencia)) {
       $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, LPAD(x.resolucion, 4, 0) as resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
       if ($GLOBALS["resourceCur"] == '2va') {
-        //pendiente: cambiar el query para VA. Debe consultar por vigencia del radicado y no por fecha de resolucion
+        //TO DO: cambiar el query para VA. Debe consultar por vigencia del radicado y no por fecha de resolucion
         //probar con la 357 del 2020 (corregir la fecha) y 2021
         $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, LPAD(x.resolucion, 4, 0) as resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
       }
@@ -421,13 +421,13 @@ function valla()
       $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
       $to = $GLOBALS['MAILTO'];
       $subject = '***FOTO DE VALLA RECIBIDA';
-      $message = "<h3>Se ha recibido una foto de la valla del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
+      $message = "<h3>Se ha recibido una foto de la valla del proyecto <strong>{$GLOBALS['CODCUR']}-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
       $message .= "Enviado por: $email.<br><br>";
       $message .= "Comentarios: $comentarios";
       $headers[] = 'MIME-Version: 1.0';
-      $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-      $headers[] = 'To: ' . $to;
-      $headers[] = "From: Web Curaduria 2BQ <{$GLOBALS['MAILFROM']}>";
+      $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
+      $headers[] = 'To: '.$to;
+      $headers[] = "From: {$GLOBALS['SENDER']} <{$GLOBALS['MAILFROM']}>";
 
       mail($to, $subject, $message, implode("\r\n", $headers));
       $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
@@ -505,13 +505,13 @@ function pago()
       $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
       $to = $GLOBALS['MAILTO'];
       $subject = '***NUEVO COMPROBANTE DE PAGO RECIBIDO';
-      $message = "<h3>Se ha recibido un nuevo comprobante de pago de expensas del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
+      $message = "<h3>Se ha recibido un nuevo comprobante de pago de expensas del proyecto <strong>{$GLOBALS['CODCUR']}-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
       $message .= "Enviado por: $email.<br><br>";
       $message .= "Comentarios: $comentarios";
       $headers[] = 'MIME-Version: 1.0';
-      $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-      $headers[] = 'To: ' . $to;
-      $headers[] = "From: Web Curaduria 2BQ <{$GLOBALS['MAILFROM']}>";
+      $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
+      $headers[] = 'To: '.$to;
+      $headers[] = "From: {$GLOBALS['SENDER']} <{$GLOBALS['MAILFROM']}>";
 
       mail($to, $subject, $message, implode("\r\n", $headers));
       $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
@@ -572,7 +572,7 @@ function pqr()
     $headers[] = 'MIME-Version: 1.0';
     $headers[] = 'Content-type: text/html; charset=iso-8859-1';
     $headers[] = 'To: ' . $to;
-    $headers[] = "From: Web Curaduria 1 Cartagena <{$GLOBALS['MAILFROM']}>";
+    $headers[] = "From: {$GLOBALS['SENDER']} <{$GLOBALS['MAILFROM']}>";
 
     mail($to, $subject, $message, implode("\r\n", $headers));
 

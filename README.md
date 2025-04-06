@@ -1,5 +1,5 @@
 # apiCuradurias
-Api for services on curadurias 😎
+Api for services on curadurias (the real one)😎
 
 #### Estado de un Proyecto
 
