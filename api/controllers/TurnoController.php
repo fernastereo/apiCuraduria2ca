@@ -26,7 +26,7 @@ class TurnoController {
         $data = json_decode(file_get_contents("php://input"), true);
         
         // Validar datos
-        if (!isset($data['fecha']) || !isset($data['hora']) || !isset($data['descripcion'])) {
+        if (!isset($data['fecha']) || !isset($data['hora']) ) {
             return [
                 'status' => 'error',
                 'message' => 'Faltan campos requeridos'
@@ -36,23 +36,90 @@ class TurnoController {
         // Limpiar y validar datos
         $fecha = htmlspecialchars(strip_tags($data['fecha']));
         $hora = htmlspecialchars(strip_tags($data['hora']));
-        $descripcion = htmlspecialchars(strip_tags($data['descripcion']));
-        $cliente_id = isset($data['cliente_id']) ? intval($data['cliente_id']) : null;
+        $vigencia = date('Y');
+        $idturno = $this->generateTurnoConsecutivo($vigencia);
+        $id_objeto = isset($data['id_objeto']) ? htmlspecialchars(strip_tags($data['id_objeto'])) : $this->getDefaultID('in_objeto');
+        $id_tipovivienda = isset($data['id_tipovivienda']) ? htmlspecialchars(strip_tags($data['id_tipovivienda'])) : $this->getDefaultID('in_tipovivienda');
+        $direccion = htmlspecialchars(strip_tags($data['direccion']));
+        $user_id = htmlspecialchars(strip_tags($data['user_id']));
         
         try {
+            $this->db->beginTransaction();
+
             // Insertar nuevo turno
-            $sql = "INSERT INTO turnos (fecha, hora, descripcion, cliente_id, creado_por) 
-                    VALUES (?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO in_expediente (fecha, hora, vigencia, idturno, id_objeto, id_tipovivienda, direccion, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)"; 
             
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$fecha, $hora, $descripcion, $cliente_id, $user_id]);
+            $stmt->execute([$fecha, $hora, $vigencia, $idturno, $id_objeto, $id_tipovivienda, $direccion, $user_id]);
             
+            $id = $this->db->lastInsertId();
+
+            // Guardar modalidades si existen
+            if (!empty($data['modalidades']) && is_array($data['modalidades'])) {
+                $stmt = $this->db->prepare("INSERT INTO in_modalidadexpediente (id_expediente, id_tipomodalidad) VALUES (?, ?)");
+                
+                foreach ($data['modalidades'] as $modalidadId) {
+                    $stmt->execute([$id, $modalidadId]);
+                }
+            }else{
+                // Si no se proporcionan modalidades, insertar una por defecto
+                $modalidadId = $this->getDefaultID('in_tipomodalidad');
+                if (!$modalidadId) {
+                    throw new Exception('No se encontró una modalidad por defecto');
+                }
+                $stmt = $this->db->prepare("INSERT INTO in_modalidadexpediente (id_expediente, id_tipomodalidad) VALUES (?, ?)");
+                $stmt->execute([$id, $modalidadId]); // 1 es el ID de la modalidad por defecto
+            }
+
+            // Guardar responsables si existen
+            if (!empty($data['responsables']) && is_array($data['responsables'])) {
+                foreach ($data['responsables'] as $responsableData) {
+                    // Verificar si el responsable ya existe
+                    $stmt = $this->db->prepare("SELECT id FROM in_responsable WHERE documento = ?");
+                    $stmt->execute([$responsableData['documento']]);
+                    $responsableExistente = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    $responsableId = $responsableExistente['id'];
+                    
+                    if (!$responsableExistente) {
+                        // Si no existe, crear nuevo responsable
+                        $stmt = $this->db->prepare("INSERT INTO in_responsable (
+                                            nombre, id_tipodocumento, documento, telefono, email
+                                        ) VALUES (?, ?, ?, ?, ?)");
+                                        
+                        $stmt->execute([
+                            $responsableData['nombre'],
+                            $responsableData['documento'],
+                            $responsableData['telefono'],
+                            $responsableData['email'],
+                            $responsableData['tipodocumento_id'],
+                        ]);
+                        
+                        $responsableId = $this->db->lastInsertId();
+                    }
+                    
+                    // Asociar responsable al expediente
+                    $stmt = $this->db->prepare("INSERT INTO in_responsableexpediente (
+                                        id_expediente, id_tiporesponsable, id_responsable
+                                    ) VALUES (?, ?, ?)");
+                                    
+                    $stmt->execute([
+                        $id,
+                        $responsableData['tipodocumento_id'],
+                        $responsableId
+                    ]);
+                }
+            }
+
+            $this->db->commit();
             return [
                 'status' => 'success',
                 'message' => 'Turno creado correctamente',
-                'turno_id' => $this->db->lastInsertId()
+                'turno_id' => $id
             ];
         } catch (\PDOException $e) {
+            $this->db->rollBack();
             return [
                 'status' => 'error',
                 'message' => 'Error en la base de datos: ' . $e->getMessage()
@@ -248,7 +315,7 @@ class TurnoController {
         
         try {
             $sql = "UPDATE turnos SET " . implode(", ", $updateFields) . ", 
-                   actualizado_en = NOW() WHERE id = ?";
+                    actualizado_en = NOW() WHERE id = ?";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
@@ -364,6 +431,7 @@ class TurnoController {
                 $expediente = [
                     'id' => $row['id'],
                     'fecha' => $row['fecha'],
+                    'hora' => $row['hora'],
                     'idturno' => $row['idturno'],
                     'vigencia' => $row['vigencia'],
                     'direccion' => $row['direccion'],
@@ -395,7 +463,7 @@ class TurnoController {
             $this->addResponsableIfNotExists($expedientes[$expedientesMap[$expedienteId]], $row);
 
         }
-        
+
         return $expedientes;
     }
 
@@ -476,5 +544,36 @@ class TurnoController {
         
         $stmtCount->execute();
         return $stmtCount->fetchColumn();
+    }
+
+    /**
+     * Genera el numero de turno consecutivo por vigencia
+     * @return int Número de turno consecutivo
+     */
+    private function generateTurnoConsecutivo($vigencia) {
+        $sql = "SELECT idturno FROM in_expediente WHERE vigencia = ? ORDER BY idturno DESC LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$vigencia]);
+        $lastTurno = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $newTurno = 1;
+        if ($lastTurno) {
+            $newTurno = $lastTurno['idturno'] + 1;
+        }
+
+        return $newTurno;
+    }
+
+    /**
+     * Obtiene el id por defecto de la tabla dada
+     * @return int id por defecto
+     */
+    private function getDefaultID($table) {
+        $sql = "SELECT id FROM $table WHERE tipo_registro='D'";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $result['id'] ?? null;
     }
 }
