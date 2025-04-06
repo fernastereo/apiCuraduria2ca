@@ -22,37 +22,16 @@ if (!in_array($resourceType, $allowedResourceTypes)) {
 }
 
 // Definir cadena de conexion de acuerdo a a la curaduria que hace la peticion
-$HOST = '198.71.227.95';
-$PATH_AWS = 'https://web-curadurias.s3-us-west-1.amazonaws.com/' . $resourceCur . '/';
-switch ($resourceCur) {
-  case '1sm':
-    $DB = 'curad1';
-    $USER = 'consulta';
-    $PASS = 'aA0987!1';
-    break;
-  case '2bq':
-    $DB = 'curad2bq';
-    $USER = 'usuariocurad';
-    $PASS = '12345678';
-    $MAILTO = 'info@curaduria2barranquilla.com';
-    $MAILFROM = "info@curaduria2barranquilla.com";
-    break;
-  case '1ca':
-    $DB = 'curad1ca';
-    $USER = 'consulta1ca';
-    $PASS = 'aA0987!1';
-    $MAILTO = 'informacion@curaduria1cartagena.com';
-    $MAILFROM = "informacion@curaduria1cartagena.com";
-    break;
-  case '2va':
-    $DB = 'curaduria2va';
-    $USER = 'curaduria2va';
-    $PASS = 'Glfu4#95';
-    break;         
-  default:
-    # code...
-    break;
-}
+require '../vendor/autoload.php';
+$config = require('config.php');
+$HOST = $config['HOST'];
+$PATH_AWS = $config['PATH_AWS'] . $resourceCur . '/';
+$DB = $config['DB'];
+$USER = $config['USER'];
+$PASS = $config['PASS'];
+$MAILTO = $config['MAILTO'];
+$MAILFROM = $config['MAILFROM'];
+
 // Se indica al cliente que lo que recibirá es un json
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -66,7 +45,7 @@ switch ($resourceType) {
       case 'GET':
         echo resolucion($resourceRes, $resourceVig);
         break;
-      
+
       default:
         # code...
         break;
@@ -81,7 +60,7 @@ switch ($resourceType) {
       case 'GET':
         echo radicacion($resourceRad, $resourceVig);
         break;
-      
+
       default:
         # code...
         break;
@@ -97,11 +76,11 @@ switch ($resourceType) {
       case 'GET':
         echo resoluciones($fechaini, $fechafin);
         break;
-      
+
       default:
         # code...
         break;
-    }    
+    }
     break;
 
   case 'publicacion':
@@ -127,11 +106,11 @@ switch ($resourceType) {
       case 'GET':
         echo publicaciones($fechaini, $fechafin);
         break;
-      
+
       default:
         # code...
         break;
-    }    
+    }
     break;
 
   case 'valla':
@@ -141,7 +120,7 @@ switch ($resourceType) {
         echo valla();
         break;
       case 'GET':
-        
+
         break;
       default:
         # code...
@@ -156,21 +135,21 @@ switch ($resourceType) {
         echo pago();
         break;
       case 'GET':
-        
+
         break;
       default:
         # code...
         break;
     }
     break;
-  
+
   case 'pqr':
     switch (strtoupper($_SERVER['REQUEST_METHOD'])) {
       case 'POST':
         echo pqr();
         break;
       case 'GET':
-        
+
         break;
       default:
         # code...
@@ -182,38 +161,38 @@ switch ($resourceType) {
     break;
 }
 
-function radicacion($id = null, $vigencia = null){
+function radicacion($id = null, $vigencia = null)
+{
 
-  try{
+  try {
     $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     if (!is_null($id) && !is_null($vigencia)) {
       $query = "select e.radicacion, e.fecharad, e.solicitante, e.direccion, e.modalidad, e.estado from expediente e where e.idradicacion= :id and e.vigencia= :vigencia;";
     }
 
     $stmt = $con->prepare($query);
-    $stmt->execute(array(':id' => $id, ':vigencia' => $vigencia ));
+    $stmt->execute(array(':id' => $id, ':vigencia' => $vigencia));
     $stmt->execute();
-    if($stmt->rowCount() > 0){
+    if ($stmt->rowCount() > 0) {
       $resoluciones = ['response' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
-    }else{
+    } else {
       $resoluciones = ['response' => 'error', 'message' => 'No se encontró el registro solicitado. Por favor comuniquese con nosotros a cualquiera de nuestras lineas de atención'];
     }
-
-  } catch(PDOException $e) {
+  } catch (PDOException $e) {
     $resoluciones = ['response' => 'error', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage()];
   }
 
   return json_encode($resoluciones);
 }
 
-function resolucion($id = null, $vigencia = null){
-
-  try{
+function resolucion($id = null, $vigencia = null)
+{
+  try {
     $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     if (!is_null($id) && !is_null($vigencia)) {
       $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, LPAD(x.resolucion, 4, 0) as resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.resolucion= :id and year(x.fecharesol)= :vigencia;";
       if ($GLOBALS["resourceCur"] == '2va') {
@@ -224,100 +203,101 @@ function resolucion($id = null, $vigencia = null){
     }
 
     $stmt = $con->prepare($query);
-    $stmt->execute(array(':id' => $id, ':vigencia' => $vigencia ));
+    $stmt->execute(array(':id' => $id, ':vigencia' => $vigencia));
     $stmt->execute();
-    if($stmt->rowCount() > 0){
+    if ($stmt->rowCount() > 0) {
       $resoluciones = ['response' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
-    }else{
+    } else {
       $resoluciones = ['response' => 'error', 'message' => 'No se encontró el registro solicitado. Por favor comuniquese con nosotros a cualquiera de nuestras lineas de atención'];
     }
-
-  } catch(PDOException $e) {
+  } catch (PDOException $e) {
     $resoluciones = ['response' => 'error', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage()];
   }
 
   return json_encode($resoluciones);
 }
 
-function resoluciones($fechaini = null, $fechafin = null){
+function resoluciones($fechaini = null, $fechafin = null)
+{
 
-  try{
+  try {
     $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     if (is_null($fechaini) && is_null($fechafin)) {
       $resoluciones = ['response' => 'error', 'message' => 'Por favor especifique un rango de fechas válido'];
-    }else{
+    } else {
       $query = "select e.radicacion, e.solicitante, e.direccion, e.modalidad, LPAD(x.resolucion, 4, 0) as resolucion, x.fecharesol, concat('" . $GLOBALS["PATH_AWS"] . "', x.archivo) as archivo from expediente e, expedidos x where x.idexpediente=e.idexpediente and x.fecharesol between :fechaini and :fechafin order by x.fecharesol desc;";
     }
 
     $stmt = $con->prepare($query);
-    $stmt->execute(array(':fechaini' => $fechaini, ':fechafin' => $fechafin ));
+    $stmt->execute(array(':fechaini' => $fechaini, ':fechafin' => $fechafin));
     $stmt->execute();
-    if($stmt->rowCount() > 0){
+    if ($stmt->rowCount() > 0) {
       $resoluciones = ['response' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
-    }else{
+    } else {
       $resoluciones = ['response' => 'error', 'message' => 'No se encontró el registro solicitado. Por favor comuniquese con nosotros a cualquiera de nuestras lineas de atención'];
     }
-
-  } catch(PDOException $e) {
+  } catch (PDOException $e) {
     $resoluciones = ['response' => 'error', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage()];
   }
 
   return json_encode($resoluciones);
 }
 
-function consecutivo($id, $table){
+function consecutivo($id, $table)
+{
 
   $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
   $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  
+
   $query = "select max($id) as maximo from $table";
 
   $stmt = $con->prepare($query);
   $stmt->execute();
-  if($stmt->rowCount() > 0){
+  if ($stmt->rowCount() > 0) {
     $consecutivo = $stmt->fetchColumn() + 1;
-  }else{
+  } else {
     $consecutivo = 1;
   }
 
   return str_pad($consecutivo, 5, "0", STR_PAD_LEFT);
 }
 
-function publicacion(){
+function publicacion()
+{
   $json = file_get_contents('php://input');
   $publicaciones[] = json_decode($json, true);
-  
-  try{
+
+  try {
     $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     $idpublicaciones = consecutivo("idpublicaciones", "publicaciones");
     $fecha = date('Y-m-d');
-    $fechapublicacion = $_POST["fechapublicacion"];// $publicaciones[0]['fechapublicacion'];
-    $referencia = $_POST["referencia"];//$publicaciones[0]['referencia'];
+    $fechapublicacion = $_POST["fechapublicacion"]; // $publicaciones[0]['fechapublicacion'];
+    $referencia = $_POST["referencia"]; //$publicaciones[0]['referencia'];
     $archivo = "pub/{$idpublicaciones}.pdf";
     $estado = $_POST["estado"]; //$publicaciones[0]['estado'];
     $idtipopublicacion = 2;
 
-    if(isset($_FILES['publicacionFile'])){
+    if (isset($_FILES['publicacionFile'])) {
 
       $query = "insert into publicaciones (idpublicaciones, fecha, fechapublicacion, referencia, archivo, estado, idtipopublicacion) values (:idpublicaciones, :fecha, :fechapublicacion, :referencia, :archivo, :estado, :idtipopublicacion)";
-  
+
       $stmt = $con->prepare($query);
-      $stmt->bindValue(':idpublicaciones', $idpublicaciones);  
-      $stmt->bindValue(':fecha', $fecha);  
-      $stmt->bindValue(':fechapublicacion', $fechapublicacion);  
-      $stmt->bindValue(':referencia', $referencia);  
-      $stmt->bindValue(':archivo', $archivo);  
-      $stmt->bindValue(':estado', $estado);  
-      $stmt->bindValue(':idtipopublicacion', $idtipopublicacion);  
+      $stmt->bindValue(':idpublicaciones', $idpublicaciones);
+      $stmt->bindValue(':fecha', $fecha);
+      $stmt->bindValue(':fechapublicacion', $fechapublicacion);
+      $stmt->bindValue(':referencia', $referencia);
+      $stmt->bindValue(':archivo', $archivo);
+      $stmt->bindValue(':estado', $estado);
+      $stmt->bindValue(':idtipopublicacion', $idtipopublicacion);
 
       $stmt->execute();
 
-      $temp_file_location = $_FILES['publicacionFile']['tmp_name']; 
-  
+      $temp_file_location = $_FILES['publicacionFile']['tmp_name'];
+
       require '../vendor/autoload.php';
       $config = require('config.php');
 
@@ -325,61 +305,62 @@ function publicacion(){
         'region'  => 'us-west-1',
         'version' => 'latest',
         'credentials' => [
-            'key'    => $config['AWS_KEY'],
-            'secret' => $config['AWS_SECRET'],
+          'key'    => $config['AWS_KEY'],
+          'secret' => $config['AWS_SECRET'],
         ]
-      ]);		
-  
+      ]);
+
       $result = $s3->putObject([
         'Bucket' => $config['BUCKET'],
         'Key'    => $GLOBALS["resourceCur"] . '/' . $archivo,
         'Body'   => 'body!',
         'SourceFile' => $temp_file_location,
-        'ACL'    => 'public-read'	
+        'ACL'    => 'public-read'
       ]);
-          
+
       $publicacion = ['response' => 'success', 'message' => "Documento publicado con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
     }
-  } catch(PDOException $e) {
+  } catch (PDOException $e) {
     $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
   }
 
   return json_encode($publicacion);
 }
 
-function publicaciones($fechaini = null, $fechafin = null){
+function publicaciones($fechaini = null, $fechafin = null)
+{
 
-  try{
+  try {
     $con = new PDO('mysql:host=' . $GLOBALS["HOST"] . ';dbname=' . $GLOBALS["DB"], $GLOBALS["USER"], $GLOBALS["PASS"]);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     if (is_null($fechaini) && is_null($fechafin)) {
       $resoluciones = ['response' => 'error', 'message' => 'Por favor especifique un rango de fechas válido'];
-    }else{
+    } else {
       $query = "select p.fechapublicacion, p.referencia, concat('" . $GLOBALS["PATH_AWS"] . "', p.archivo) as archivo, t.descripcion as tipopublicacion from publicaciones p, tipopublicacion t where p.idtipopublicacion = t.idtipopublicacion and p.fechapublicacion between :fechaini and :fechafin order by p.fechapublicacion desc;";
     }
 
     $stmt = $con->prepare($query);
-    $stmt->execute(array(':fechaini' => $fechaini, ':fechafin' => $fechafin ));
+    $stmt->execute(array(':fechaini' => $fechaini, ':fechafin' => $fechafin));
     $stmt->execute();
-    if($stmt->rowCount() > 0){
+    if ($stmt->rowCount() > 0) {
       $resoluciones = ['response' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
-    }else{
+    } else {
       $resoluciones = ['response' => 'error', 'message' => 'No se encontró el registro solicitado. Por favor comuniquese con nosotros a cualquiera de nuestras lineas de atención'];
     }
-
-  } catch(PDOException $e) {
+  } catch (PDOException $e) {
     $resoluciones = ['response' => 'error', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage()];
   }
 
   return json_encode($resoluciones);
 }
 
-function valla(){
+function valla()
+{
   $json = file_get_contents('php://input');
   $valla[] = json_decode($json, true);
 
-  try{
+  try {
 
     $email = $_POST["email"];
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -397,25 +378,25 @@ function valla(){
     $proyecto = $_POST["proyecto"];
     $vigencia = $_POST["vigencia"];
     $comentarios = $_POST["comentarios"];
-    
+
     $archivo = "vallas/{$fileName}";
 
-    if(isset($_FILES['vallaFile'])){
+    if (isset($_FILES['vallaFile'])) {
 
       $query = "insert into vallas (proyecto, vigencia, comentarios, archivo, email, fecha) values (:proyecto, :vigencia, :comentarios, :archivo, :email, :fecha)";
-  
+
       $stmt = $con->prepare($query);
-      $stmt->bindValue(':proyecto', $proyecto);  
-      $stmt->bindValue(':vigencia', $vigencia);  
-      $stmt->bindValue(':comentarios', $comentarios);  
-      $stmt->bindValue(':archivo', $archivo);  
-      $stmt->bindValue(':email', $email);  
-      $stmt->bindValue(':fecha', $fecha);  
+      $stmt->bindValue(':proyecto', $proyecto);
+      $stmt->bindValue(':vigencia', $vigencia);
+      $stmt->bindValue(':comentarios', $comentarios);
+      $stmt->bindValue(':archivo', $archivo);
+      $stmt->bindValue(':email', $email);
+      $stmt->bindValue(':fecha', $fecha);
 
       $stmt->execute();
 
-      $temp_file_location = $_FILES['vallaFile']['tmp_name']; 
-  
+      $temp_file_location = $_FILES['vallaFile']['tmp_name'];
+
       require '../vendor/autoload.php';
       $config = require('config.php');
 
@@ -423,46 +404,47 @@ function valla(){
         'region'  => 'us-west-1',
         'version' => 'latest',
         'credentials' => [
-            'key'    => $config['AWS_KEY'],
-            'secret' => $config['AWS_SECRET'],
+          'key'    => $config['AWS_KEY'],
+          'secret' => $config['AWS_SECRET'],
         ]
-      ]);		
-  
+      ]);
+
       $result = $s3->putObject([
         'Bucket' => $config['BUCKET'],
         'Key'    => $GLOBALS["resourceCur"] . '/' . $archivo,
         'Body'   => 'body!',
         'SourceFile' => $temp_file_location,
-        'ACL'    => 'public-read'	
+        'ACL'    => 'public-read'
       ]);
-      
+
       $vigencia = substr($vigencia, 2, 2);
       $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
       $to = $GLOBALS['MAILTO'];
       $subject = '***FOTO DE VALLA RECIBIDA';
       $message = "<h3>Se ha recibido una foto de la valla del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
       $message .= "Enviado por: $email.<br><br>";
-      $message .= "Comentarios: $comentarios"; 
+      $message .= "Comentarios: $comentarios";
       $headers[] = 'MIME-Version: 1.0';
-      $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
-      $headers[] = 'To: '.$to;
+      $headers[] = 'Content-type: text/html; charset=iso-8859-1';
+      $headers[] = 'To: ' . $to;
       $headers[] = "From: Web Curaduria 2BQ <{$GLOBALS['MAILFROM']}>";
 
       mail($to, $subject, $message, implode("\r\n", $headers));
       $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
     }
-  } catch(PDOException $e) {
+  } catch (PDOException $e) {
     $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
   }
 
   return json_encode($publicacion);
 }
 
-function pago(){
+function pago()
+{
   $json = file_get_contents('php://input');
   $pago[] = json_decode($json, true);
 
-  try{
+  try {
 
     $email = $_POST["email"];
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -480,25 +462,25 @@ function pago(){
     $proyecto = $_POST["proyecto"];
     $vigencia = $_POST["vigencia"];
     $comentarios = $_POST["comentarios"];
-    
+
     $archivo = "pagos/{$fileName}";
 
-    if(isset($_FILES['pagoFile'])){
+    if (isset($_FILES['pagoFile'])) {
 
       $query = "insert into pagos (proyecto, vigencia, comentarios, archivo, email, fecha) values (:proyecto, :vigencia, :comentarios, :archivo, :email, :fecha)";
-  
+
       $stmt = $con->prepare($query);
-      $stmt->bindValue(':proyecto', $proyecto);  
-      $stmt->bindValue(':vigencia', $vigencia);  
-      $stmt->bindValue(':comentarios', $comentarios);  
-      $stmt->bindValue(':archivo', $archivo);  
-      $stmt->bindValue(':email', $email);  
-      $stmt->bindValue(':fecha', $fecha);  
+      $stmt->bindValue(':proyecto', $proyecto);
+      $stmt->bindValue(':vigencia', $vigencia);
+      $stmt->bindValue(':comentarios', $comentarios);
+      $stmt->bindValue(':archivo', $archivo);
+      $stmt->bindValue(':email', $email);
+      $stmt->bindValue(':fecha', $fecha);
 
       $stmt->execute();
 
-      $temp_file_location = $_FILES['pagoFile']['tmp_name']; 
-  
+      $temp_file_location = $_FILES['pagoFile']['tmp_name'];
+
       require '../vendor/autoload.php';
       $config = require('config.php');
 
@@ -506,45 +488,46 @@ function pago(){
         'region'  => 'us-west-1',
         'version' => 'latest',
         'credentials' => [
-            'key'    => $config['AWS_KEY'],
-            'secret' => $config['AWS_SECRET'],
+          'key'    => $config['AWS_KEY'],
+          'secret' => $config['AWS_SECRET'],
         ]
-      ]);		
-  
+      ]);
+
       $result = $s3->putObject([
         'Bucket' => $config['BUCKET'],
         'Key'    => $GLOBALS["resourceCur"] . '/' . $archivo,
         'Body'   => 'body!',
         'SourceFile' => $temp_file_location,
-        'ACL'    => 'public-read'	
+        'ACL'    => 'public-read'
       ]);
-      
+
       $vigencia = substr($vigencia, 2, 2);
       $proyecto = str_pad($proyecto, 4, "0", STR_PAD_LEFT);
       $to = $GLOBALS['MAILTO'];
       $subject = '***NUEVO COMPROBANTE DE PAGO RECIBIDO';
       $message = "<h3>Se ha recibido un nuevo comprobante de pago de expensas del proyecto <strong>08001-2-$vigencia-$proyecto</strong> a traves de la pagina web.</h3><br><br>Puede verlo en el siguiente link: {$GLOBALS["PATH_AWS"]}{$archivo}<br><br>";
       $message .= "Enviado por: $email.<br><br>";
-      $message .= "Comentarios: $comentarios"; 
+      $message .= "Comentarios: $comentarios";
       $headers[] = 'MIME-Version: 1.0';
-      $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
-      $headers[] = 'To: '.$to;
+      $headers[] = 'Content-type: text/html; charset=iso-8859-1';
+      $headers[] = 'To: ' . $to;
       $headers[] = "From: Web Curaduria 2BQ <{$GLOBALS['MAILFROM']}>";
 
       mail($to, $subject, $message, implode("\r\n", $headers));
       $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito", 'url' => "{$GLOBALS["PATH_AWS"]}{$archivo}"];
     }
-  } catch(PDOException $e) {
+  } catch (PDOException $e) {
     $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
   }
 
   return json_encode($publicacion);
 }
 
-function pqr(){
+function pqr()
+{
   // $json = file_get_contents('php://input');
   // $pago[] = json_decode($json, true);
-  try{
+  try {
 
     $email = $_POST["email"];
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -562,18 +545,18 @@ function pqr(){
     $nombre = $_POST["nombre"];
     $asunto = $_POST["asunto"];
     $comentario = $_POST["comentario"];
-    
+
     // $archivo = "pagos/{$fileName}";
 
 
     $query = "insert into pqr (nombre, email, asunto, comentario, fecharecibido) values (:nombre, :email, :asunto, :comentario, :fecharecibido)";
 
     $stmt = $con->prepare($query);
-    $stmt->bindValue(':nombre', $nombre);  
-    $stmt->bindValue(':email', $email);  
-    $stmt->bindValue(':asunto', $asunto);  
-    $stmt->bindValue(':comentario', $comentario);  
-    $stmt->bindValue(':fecharecibido', $fecharecibido);  
+    $stmt->bindValue(':nombre', $nombre);
+    $stmt->bindValue(':email', $email);
+    $stmt->bindValue(':asunto', $asunto);
+    $stmt->bindValue(':comentario', $comentario);
+    $stmt->bindValue(':fecharecibido', $fecharecibido);
 
     $stmt->execute();
 
@@ -581,24 +564,22 @@ function pqr(){
 
     // require '../vendor/autoload.php';
     // $config = require('config.php');
-    
+
     $to = $GLOBALS['MAILTO'];
     $subject = '***NUEVO PQR RECIBIDO';
     $message = "<h3>Se ha recibido un nuevo PQR a traves de la pagina web.</h3><br><br>El mensaje recibido es el siguiente:<br><br><h4>Asunto: $asunto</h4><br>$comentario<br><br>";
     $message .= "Enviado por: $nombre<br>E-mail: $email.<br><br>";
     $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-type: text/html; charset=iso-8859-1';   
+    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
     $headers[] = 'To: ' . $to;
     $headers[] = "From: Web Curaduria 1 Cartagena <{$GLOBALS['MAILFROM']}>";
 
-    mail($to, $subject, $message, implode("\r\n", $headers));    
-    
-    $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito."];
+    mail($to, $subject, $message, implode("\r\n", $headers));
 
-  } catch(PDOException $e) {
+    $publicacion = ['response' => 'success', 'message' => "Información recibida con éxito."];
+  } catch (PDOException $e) {
     $publicacion = ['response' => 'danger', 'message' => 'Error conectando con la base de datos: ' . $e->getMessage(), 'url' => ""];
   }
 
   return json_encode($publicacion);
 }
-

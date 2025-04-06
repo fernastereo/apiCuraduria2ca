@@ -20,6 +20,9 @@
                         <div class="col">
                             <select class="form-select form-select-sm" aria-label=".form-select-sm example" id="vigencia">
                                 <option selected>Vigencia</option>
+                                <option value="2023">2025</option>
+                                <option value="2023">2024</option>
+                                <option value="2023">2023</option>
                                 <option value="2022">2022</option>
                                 <option value="2021">2021</option>
                                 <option value="2020">2020</option>
@@ -74,7 +77,7 @@
     })
 
     const enviarDatos = (file) => {
-        const api = "http://css-sas.com/apicuradurias/api/router.php/publicacion/2bq";
+        const api = "https://curaduria2barranquilla.com/apicuraduria2bq/api/router.php/publicacion/2bq";
 
         // Verificar el tipo de archivo
         if(!['application/pdf'].includes(file.type))
