@@ -80,7 +80,7 @@ class TurnoController {
                     $stmt->execute([$responsableData['documento']]);
                     $responsableExistente = $stmt->fetch(PDO::FETCH_ASSOC);
                     
-                    $responsableId = $responsableExistente['id'];
+                    $responsableId = $responsableExistente ? $responsableExistente['id'] : null;
                     
                     if (!$responsableExistente) {
                         // Si no existe, crear nuevo responsable
@@ -90,10 +90,10 @@ class TurnoController {
                                         
                         $stmt->execute([
                             $responsableData['nombre'],
+                            $responsableData['tipodocumento_id'],
                             $responsableData['documento'],
                             $responsableData['telefono'],
                             $responsableData['email'],
-                            $responsableData['tipodocumento_id'],
                         ]);
                         
                         $responsableId = $this->db->lastInsertId();
@@ -147,11 +147,11 @@ class TurnoController {
             $offset = ($page - 1) * $perPage;
 
             // Consulta con todos los joins
-            $sql = $this->buildExpedienteQuery();
+            $complSql = " ORDER BY fecha ASC, id ASC LIMIT :limit OFFSET :offset"; 
+            $sql = $this->buildExpedienteQuery($complSql);
             $sqlParams = $this->getQueryParams();
 
             // Ordenación y paginación
-            $sql .= " ORDER BY e.fecha ASC, e.id ASC LIMIT :limit OFFSET :offset";
             $sqlParams[':limit'] = $perPage;
             $sqlParams[':offset'] = $offset;
 
@@ -207,9 +207,9 @@ class TurnoController {
                     'message' => 'ID de expediente no válido'
                 ];
             }
-
-            $sql = $this->buildExpedienteQuery();
-            $sql .= " AND e.id = :id";
+            
+            $complSql = " WHERE id = :id ORDER BY fecha ASC, id ASC";
+            $sql = $this->buildExpedienteQuery($complSql);
             
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
@@ -378,7 +378,7 @@ class TurnoController {
      * Construye la consulta SQL base para expedientes
      * @return string Consulta SQL
      */
-    private function buildExpedienteQuery() {
+    private function buildExpedienteQuery($complSql = "") {
         return "SELECT e.*, o.nombre as objeto_nombre, tv.nombre as tipovivienda_nombre, 
                     me.id_tipomodalidad, tm.nombre as tipomodalidad_nombre, 
                     tm.id_tipolicencia, tl.nombre as tipolicencia_nombre, 
@@ -386,7 +386,10 @@ class TurnoController {
                     re.id_responsable, r.nombre as responsable_nombre, r.id_tipodocumento, 
                     r.documento, r.telefono, r.email, 
                     td.nombre as tipodocumento_nombre
-                FROM in_expediente e, in_objeto o, in_tipovivienda tv, 
+                FROM (
+                        SELECT * FROM in_expediente ie
+                        $complSql
+                    ) e, in_objeto o, in_tipovivienda tv, 
                     in_modalidadexpediente me, in_tipomodalidad tm, in_tipolicencia tl, 
                     in_responsableexpediente re, in_tiporesponsable tr, 
                     in_responsable r, in_tipodocumento td
