@@ -1,7 +1,7 @@
 <?php
-// controllers/TurnoController.php
+// controllers/ExpedienteController.php
 
-class TurnoController {
+class ExpedienteController {
     private $db;
     
     public function __construct() {
@@ -9,7 +9,6 @@ class TurnoController {
         $this->db = $database->connect();
     }
     
-    // CREATE - Crear un nuevo turno
     public function create() {
         // Verificar autenticación
         $token = getAuthToken();
@@ -46,7 +45,7 @@ class TurnoController {
         try {
             $this->db->beginTransaction();
 
-            // Insertar nuevo turno
+            // Insertar nuevo expediente
             $sql = "INSERT INTO in_expediente (fecha, hora, vigencia, numturno, objeto_id, tipovivienda_id, direccion, user_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"; 
             
@@ -116,7 +115,7 @@ class TurnoController {
             return [
                 'status' => 'success',
                 'message' => 'Turno creado correctamente',
-                'turno_id' => $id
+                'expediente_id' => $id
             ];
         } catch (\PDOException $e) {
             $this->db->rollBack();
@@ -127,7 +126,7 @@ class TurnoController {
         }
     }
     
-    // READ - Obtener todos los turnos o un turno específico
+    // READ - Obtener todos los expedientes o un expediente específico
     public function getAll() {
         // Verificar autenticación
         $token = getAuthToken();
@@ -187,7 +186,7 @@ class TurnoController {
         }
     }
     
-    // READ - Obtener un turno específico por ID
+    // READ - Obtener un expediente específico por ID
     public function getById($id) {
         // Verificar autenticación
         $token = getAuthToken();
@@ -228,7 +227,7 @@ class TurnoController {
             
             return [
                 'status' => 'success',
-                'turno' => $expedientes[0],
+                'expediente' => $expedientes[0],
             ];
         } catch (\PDOException $e) {
             return [
@@ -238,7 +237,7 @@ class TurnoController {
         }
     }
     
-    // UPDATE - Actualizar un turno existente
+    // UPDATE - Actualizar un expediente existente
     public function update($id) {
         // Verificar autenticación
         $token = getAuthToken();
@@ -251,7 +250,7 @@ class TurnoController {
             ];
         }
         
-        // Verificar primero si el turno existe
+        // Verificar primero si el expediente existe
         try {
             $stmt = $this->db->prepare("SELECT id FROM turnos WHERE id = ?");
             $stmt->execute([$id]);

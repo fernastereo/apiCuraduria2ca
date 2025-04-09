@@ -6,7 +6,7 @@ require_once 'config/database.php';
 require_once 'functions/auth_functions.php';
 require_once 'controllers/AuthController.php';
 require_once 'controllers/UserController.php';
-require_once 'controllers/TurnoController.php';
+require_once 'controllers/ExpedienteController.php';
 
 // Configuración de headers para API REST
 header("Access-Control-Allow-Origin: *");
@@ -28,7 +28,7 @@ $endpoint = $request[0] ?? '';
 // Instanciar controladores
 $authController = new AuthController();
 $userController = new UserController();
-$turnoController = new TurnoController();
+$expedienteController = new ExpedienteController();
 
 // Respuesta por defecto
 $response = [
@@ -68,31 +68,31 @@ switch ($endpoint) {
         }
         break;
 
-    case 'turnos':
-        // Si hay un segundo segmento en la URL, es el ID del turno
-        $turno_id = $request[1] ?? null;
+    case 'expedientes':
+        // Si hay un segundo segmento en la URL, es el ID del expediente
+        $expediente_id = $request[1] ?? null;
         
-        if ($turno_id) {
-            // Rutas para un turno específico
+        if ($expediente_id) {
+            // Rutas para un expediente específico
             switch ($method) {
                 case 'GET':
-                    $response = $turnoController->getById($turno_id);
+                    $response = $expedienteController->getById($expediente_id);
                     break;
                 case 'PUT':
-                    $response = $turnoController->update($turno_id);
+                    $response = $expedienteController->update($expediente_id);
                     break;
                 case 'DELETE':
-                    $response = $turnoController->delete($turno_id);
+                    $response = $expedienteController->delete($expediente_id);
                     break;
             }
         } else {
-            // Rutas para la colección de turnos
+            // Rutas para la colección de expedientes
             switch ($method) {
                 case 'GET':
-                    $response = $turnoController->getAll();
+                    $response = $expedienteController->getAll();
                     break;
                 case 'POST':
-                    $response = $turnoController->create();
+                    $response = $expedienteController->create();
                     break;
             }
         }
