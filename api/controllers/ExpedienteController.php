@@ -166,6 +166,8 @@ class ExpedienteController {
             //Estructurar los datos
             $expedientes = $this->processExpedienteRows($rows);
             $totalCount = $this->countTotalExpedientes();
+            $itemInit = $offset + 1;
+            $itemEnd = ($offset + $perPage) > $totalCount ? $totalCount : ($offset + $perPage);
             
             // Construir respuesta
             return [
@@ -174,6 +176,8 @@ class ExpedienteController {
                 'pagination' => [
                     'current_page' => $page,
                     'per_page' => $perPage,
+                    'item_init' => $itemInit,
+                    'item_end' => $itemEnd,
                     'total_items' => $totalCount,
                     'total_pages' => ceil($totalCount / $perPage)
                 ]
