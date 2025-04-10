@@ -508,7 +508,7 @@ class ExpedienteController {
 
         $expediente['responsables'][] = [
             'id' => $responsable_id,
-            'nombre' => $row['responsable_nombre'],
+            'nombre' => $this->capitalizarNombre($row['responsable_nombre']),
             'tiporesponsable' => [
                 'id' => $row['tiporesponsable_id'],
                 'nombre' => $row['tiporesponsable_nombre'],
@@ -578,4 +578,36 @@ class ExpedienteController {
         
         return $result['id'] ?? null;
     }
+
+    /**
+     * Capitaliza la primera letra de cada palabra en un nombre completo
+     * @param string $nombreCompleto - El nombre completo que se desea capitalizar
+     * @return string - El nombre completo con la primera letra de cada palabra en mayúscula
+     */
+    private function capitalizarNombre($nombreCompleto) {
+        // Verificar si el input es válido
+        if (empty($nombreCompleto) || !is_string($nombreCompleto)) {
+            return '';
+        }
+        
+        // Eliminar espacios adicionales y convertir a minúsculas
+        $nombreCompleto = trim(mb_strtolower($nombreCompleto));
+        
+        // Dividir el nombre en palabras
+        $palabras = preg_split('/\s+/', $nombreCompleto);
+        
+        // Capitalizar la primera letra de cada palabra
+        $palabrasCapitalizadas = array_map(function($palabra) {
+            if (empty($palabra)) {
+                return $palabra;
+            }
+            // Usar mb_convert_case para soporte de caracteres UTF-8 (como á, é, í, etc.)
+            return mb_convert_case(mb_substr($palabra, 0, 1), MB_CASE_UPPER, 'UTF-8') . 
+                mb_substr($palabra, 1);
+        }, $palabras);
+        
+        // Unir las palabras y devolver el resultado
+        return implode(' ', $palabrasCapitalizadas);
+    }
+
 }
