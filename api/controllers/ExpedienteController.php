@@ -145,10 +145,13 @@ class ExpedienteController {
             $perPage = isset($_GET['per_page']) ? max(1, intval($_GET['per_page'])) : 10;
             $offset = ($page - 1) * $perPage;
 
+            // Determinar el tipo de búsqueda si existe
+            $searchType = isset($_GET['search']) ? $this->determineSearchType($_GET['search']) : null;
+
             // Consulta con todos los joins
             $complSql = " ORDER BY fecha ASC, id ASC LIMIT :limit OFFSET :offset"; 
-            $sql = $this->buildExpedienteQuery($complSql);
-            $sqlParams = $this->getQueryParams();
+            $sql = $this->buildExpedienteQuery($complSql, $searchType);
+            $sqlParams = $this->getQueryParams($searchType);
 
             // Ordenación y paginación
             $sqlParams[':limit'] = $perPage;
@@ -165,7 +168,7 @@ class ExpedienteController {
 
             //Estructurar los datos
             $expedientes = $this->processExpedienteRows($rows);
-            $totalCount = $this->countTotalExpedientes();
+            $totalCount = $this->countTotalExpedientes($searchType);
             $itemInit = $offset + 1;
             $itemEnd = ($offset + $perPage) > $totalCount ? $totalCount : ($offset + $perPage);
             
@@ -378,11 +381,33 @@ class ExpedienteController {
     }
 
     /**
+     * Determina el tipo de búsqueda basado en el valor proporcionado
+     * @param string $search Valor a analizar
+     * @return string Tipo de búsqueda ('number', 'date' o 'text')
+     */
+    private function determineSearchType($search) {
+        // Si es un número entero, asumimos que es una búsqueda por número de turno
+        if (ctype_digit($search)) {
+            return 'number';
+        }
+        
+        // Si coincide con el formato de fecha YYYY-MM-DD
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $search)) {
+            return 'date';
+        }
+        
+        // En cualquier otro caso, asumimos que es una búsqueda por texto
+        return 'text';
+    }
+
+    /**
      * Construye la consulta SQL base para expedientes
+     * @param string $complSql Complemento de la consulta SQL
+     * @param string|null $searchType Tipo de búsqueda ('number', 'date' o 'text')
      * @return string Consulta SQL
      */
-    private function buildExpedienteQuery($complSql = "") {
-        return "SELECT e.*, o.nombre as objeto_nombre, tv.nombre as tipovivienda_nombre, 
+    private function buildExpedienteQuery($complSql = "", $searchType = null) {
+        $sql = "SELECT e.*, o.nombre as objeto_nombre, tv.nombre as tipovivienda_nombre, 
                     me.tipomodalidad_id, tm.nombre as tipomodalidad_nombre, 
                     tm.tipolicencia_id, tl.nombre as tipolicencia_nombre, 
                     re.tiporesponsable_id, tr.nombre as tiporesponsable_nombre, 
@@ -405,17 +430,41 @@ class ExpedienteController {
                 AND re.tiporesponsable_id = tr.id
                 AND re.responsable_id = r.id
                 AND r.tipodocumento_id = td.id";
+
+        // Agregar condición de búsqueda si existe
+        if (isset($_GET['search']) && $searchType) {
+            switch($searchType) {
+                case 'number':
+                    $sql .= " AND e.numturno = :search";
+                    break;
+                case 'date':
+                    $sql .= " AND DATE(e.fecha) = :search";
+                    break;
+                case 'text':
+                    $sql .= " AND (r.nombre LIKE :search1 OR e.direccion LIKE :search2)";
+                    break;
+            }
+        }
+
+        return $sql;
     }
 
     /**
      * Obtiene los parámetros de filtro para la consulta
+     * @param string|null $searchType Tipo de búsqueda ('number', 'date' o 'text')
      * @return array Parámetros para bindear a la consulta
      */
-    private function getQueryParams() {
+    private function getQueryParams($searchType = null) {
         $params = [];
         
-        if (isset($_GET['fecha'])) {
-            $params[':fecha'] = $_GET['fecha'];
+        if (isset($_GET['search']) && $searchType) {
+            $value = $_GET['search'];
+            if($searchType === 'text'){
+                $params[':search1'] = "%$value%";
+                $params[':search2'] = "%$value%";
+            }else{
+                $params[':search'] = $value;
+            }
         }
         
         return $params;
@@ -529,27 +578,62 @@ class ExpedienteController {
 
     /**
      * Cuenta el total de expedientes con los filtros aplicados
+     * @param string|null $searchType Tipo de búsqueda ('number', 'date' o 'text')
      * @return int Total de expedientes
      */
-    private function countTotalExpedientes() {
-        // Contar el total para la paginación (simplificado)
-        $sqlCount = "SELECT COUNT(DISTINCT e.id) as total FROM in_expediente e 
-        WHERE EXISTS (SELECT 1 FROM in_modalidadexpediente me WHERE e.id = me.expediente_id)
-        AND EXISTS (SELECT 1 FROM in_responsableexpediente re WHERE e.id = re.expediente_id)";
+    private function countTotalExpedientes($searchType = null) {
+        // Contar el total para la paginación
+        $sqlCount = "SELECT COUNT(DISTINCT e.id) as total 
+                    FROM in_expediente e 
+                    INNER JOIN in_responsableexpediente re ON e.id = re.expediente_id
+                    INNER JOIN in_responsable r ON re.responsable_id = r.id
+                    WHERE EXISTS (SELECT 1 FROM in_modalidadexpediente me WHERE e.id = me.expediente_id)";
 
-        // Aplicar los mismos filtros que en la consulta principal
-        if (isset($_GET['fecha'])) {
-            $sqlCount .= " AND e.fecha = :fecha";
+        // Agregar condición de búsqueda si existe
+        if (isset($_GET['search']) && $searchType) {
+            switch($searchType) {
+                case 'number':
+                    $sqlCount .= " AND e.numturno = :search";
+                    break;
+                case 'date':
+                    $sqlCount .= " AND DATE(e.fecha) = :search";
+                    break;
+                case 'text':
+                    $sqlCount .= " AND (r.nombre LIKE :search1 OR e.direccion LIKE :search2)";
+                    break;
+            }
         }
-        
+
+        $sqlParams = $this->getQueryParams($searchType);
+
+        // Preparar la consulta
         $stmtCount = $this->db->prepare($sqlCount);
-        
-        if (isset($_GET['fecha'])) {
-            $stmtCount->bindParam(':fecha', $_GET['fecha']);
+        foreach ($sqlParams as $param => $value) {
+            $stmtCount->bindValue($param, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
         }
+
+        // // Aplicar los mismos filtros que en la consulta principal
+        // if (isset($_GET['fecha'])) {
+        //     $sqlCount .= " AND e.fecha = :fecha";
+        // }
+
+        // if (isset($_GET['search'])) {
+        //     $sqlCount .= " AND (r.nombre LIKE :search OR e.numturno LIKE :search OR e.direccion LIKE :search)";
+        // }
+        
+        // $stmtCount = $this->db->prepare($sqlCount);
+        
+        // if (isset($_GET['fecha'])) {
+        //     $stmtCount->bindParam(':fecha', $_GET['fecha']);
+        // }
+
+        // if (isset($_GET['search'])) {
+        //     $stmtCount->bindValue(':search', '%' . $_GET['search'] . '%');
+        // }
         
         $stmtCount->execute();
-        return $stmtCount->fetchColumn();
+        $result = $stmtCount->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
     }
 
     /**
