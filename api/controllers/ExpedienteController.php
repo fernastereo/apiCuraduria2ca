@@ -257,122 +257,148 @@ class ExpedienteController {
             ];
         }
         
-        // Verificar primero si el expediente existe
         try {
-            $stmt = $this->db->prepare("SELECT id FROM turnos WHERE id = ?");
+            // Verificar si el expediente existe
+            $stmt = $this->db->prepare("SELECT id FROM in_expediente WHERE id = ?");
             $stmt->execute([$id]);
             
             if ($stmt->rowCount() === 0) {
                 http_response_code(404);
                 return [
                     'status' => 'error',
-                    'message' => 'Turno no encontrado'
+                    'message' => 'Expediente no encontrado'
                 ];
             }
-        } catch (\PDOException $e) {
-            return [
-                'status' => 'error',
-                'message' => 'Error en la base de datos: ' . $e->getMessage()
-            ];
-        }
-        
-        // Obtener datos del body
-        $data = json_decode(file_get_contents("php://input"), true);
-        
-        // Construir consulta dinámica para actualizar solo los campos proporcionados
-        $updateFields = [];
-        $params = [];
-        
-        if (isset($data['fecha'])) {
-            $updateFields[] = "fecha = ?";
-            $params[] = htmlspecialchars(strip_tags($data['fecha']));
-        }
-        
-        if (isset($data['hora'])) {
-            $updateFields[] = "hora = ?";
-            $params[] = htmlspecialchars(strip_tags($data['hora']));
-        }
-        
-        if (isset($data['descripcion'])) {
-            $updateFields[] = "descripcion = ?";
-            $params[] = htmlspecialchars(strip_tags($data['descripcion']));
-        }
-        
-        if (isset($data['cliente_id'])) {
-            $updateFields[] = "cliente_id = ?";
-            $params[] = intval($data['cliente_id']);
-        }
-        
-        if (isset($data['estado'])) {
-            $updateFields[] = "estado = ?";
-            $params[] = htmlspecialchars(strip_tags($data['estado']));
-        }
-        
-        // Si no hay campos para actualizar
-        if (empty($updateFields)) {
-            return [
-                'status' => 'error',
-                'message' => 'No se proporcionaron campos para actualizar'
-            ];
-        }
-        
-        // Añadir el ID al final de los parámetros
-        $params[] = $id;
-        
-        try {
-            $sql = "UPDATE turnos SET " . implode(", ", $updateFields) . ", 
-                    actualizado_en = NOW() WHERE id = ?";
+
+            // Obtener datos del body
+            $data = json_decode(file_get_contents("php://input"), true);
             
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
-            
-            return [
-                'status' => 'success',
-                'message' => 'Turno actualizado correctamente'
-            ];
-        } catch (\PDOException $e) {
-            return [
-                'status' => 'error',
-                'message' => 'Error en la base de datos: ' . $e->getMessage()
-            ];
-        }
-    }
-    
-    // DELETE - Eliminar un turno
-    public function delete($id) {
-        // Verificar autenticación
-        $token = getAuthToken();
-        
-        if (!$token || !($user_id = verifyValidToken($token))) {
-            http_response_code(401);
-            return [
-                'status' => 'error',
-                'message' => 'No autorizado'
-            ];
-        }
-        
-        try {
-            // Verificar si el turno existe
-            $stmt = $this->db->prepare("SELECT id FROM turnos WHERE id = ?");
-            $stmt->execute([$id]);
-            
-            if ($stmt->rowCount() === 0) {
-                http_response_code(404);
+            // Validar datos
+            if (empty($data)) {
                 return [
                     'status' => 'error',
-                    'message' => 'Turno no encontrado'
+                    'message' => 'No se proporcionaron datos para actualizar'
                 ];
             }
-            
-            // Eliminar el turno
-            $stmt = $this->db->prepare("DELETE FROM turnos WHERE id = ?");
-            $stmt->execute([$id]);
-            
+
+            $this->db->beginTransaction();
+
+            // Actualizar expediente
+            $updateFields = [];
+            $params = [];
+
+            if (isset($data['objeto_id'])) {
+                $updateFields[] = "objeto_id = ?";
+                $params[] = htmlspecialchars(strip_tags($data['objeto_id']));
+            }
+
+            if (isset($data['tipovivienda_id'])) {
+                $updateFields[] = "tipovivienda_id = ?";
+                $params[] = htmlspecialchars(strip_tags($data['tipovivienda_id']));
+            }
+
+            if (isset($data['direccion'])) {
+                $updateFields[] = "direccion = ?";
+                $params[] = htmlspecialchars(strip_tags($data['direccion']));
+            }
+
+            if (isset($data['documentacion'])) {
+                $updateFields[] = "documentacion = ?";
+                $params[] = $data['documentacion']; // No sanitizamos longtext
+            }
+
+            if (isset($data['notas'])) {
+                $updateFields[] = "notas = ?";
+                $params[] = $data['notas']; // No sanitizamos longtext
+            }
+
+            if (isset($data['altura'])) {
+                $updateFields[] = "altura = ?";
+                $params[] = floatval($data['altura']);
+            }
+
+            if (isset($data['descripcion'])) {
+                $updateFields[] = "descripcion = ?";
+                $params[] = $data['descripcion']; // No sanitizamos longtext
+            }
+
+            if (isset($data['observaciones'])) {
+                $updateFields[] = "observaciones = ?";
+                $params[] = $data['observaciones']; // No sanitizamos longtext
+            }
+
+            // Si hay campos para actualizar
+            if (!empty($updateFields)) {
+                $params[] = $id;
+                $sql = "UPDATE in_expediente SET " . implode(", ", $updateFields) . " WHERE id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($params);
+            }
+
+            // Actualizar modalidades si se proporcionan
+            if (isset($data['modalidades']) && is_array($data['modalidades'])) {
+                // Eliminar modalidades existentes
+                $stmt = $this->db->prepare("DELETE FROM in_modalidadexpediente WHERE expediente_id = ?");
+                $stmt->execute([$id]);
+
+                // Insertar nuevas modalidades
+                $stmt = $this->db->prepare("INSERT INTO in_modalidadexpediente (expediente_id, tipomodalidad_id) VALUES (?, ?)");
+                foreach ($data['modalidades'] as $tipomodalidad_id) {
+                    $stmt->execute([$id, $tipomodalidad_id]);
+                }
+            }
+
+            // Actualizar responsables si se proporcionan
+            if (isset($data['responsables']) && is_array($data['responsables'])) {
+                // Eliminar responsables existentes
+                $stmt = $this->db->prepare("DELETE FROM in_responsableexpediente WHERE expediente_id = ?");
+                $stmt->execute([$id]);
+
+                foreach ($data['responsables'] as $responsableData) {
+                    // Verificar si el responsable ya existe
+                    $stmt = $this->db->prepare("SELECT id FROM in_responsable WHERE documento = ?");
+                    $stmt->execute([$responsableData['documento']]);
+                    $responsableExistente = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    $responsable_id = $responsableExistente ? $responsableExistente['id'] : null;
+                    
+                    if (!$responsableExistente) {
+                        // Si no existe, crear nuevo responsable
+                        $stmt = $this->db->prepare("INSERT INTO in_responsable (
+                                            nombre, tipodocumento_id, documento, telefono, email
+                                        ) VALUES (?, ?, ?, ?, ?)");
+                                        
+                        $stmt->execute([
+                            $responsableData['nombre'],
+                            $responsableData['tipodocumento_id'],
+                            $responsableData['documento'],
+                            $responsableData['telefono'],
+                            $responsableData['email'],
+                        ]);
+                        
+                        $responsable_id = $this->db->lastInsertId();
+                    }
+                    
+                    // Asociar responsable al expediente
+                    $stmt = $this->db->prepare("INSERT INTO in_responsableexpediente (
+                                        expediente_id, tiporesponsable_id, responsable_id
+                                    ) VALUES (?, ?, ?)");
+                                    
+                    $stmt->execute([
+                        $id,
+                        $responsableData['tiporesponsable_id'],
+                        $responsable_id
+                    ]);
+                }
+            }
+
+            $this->db->commit();
             return [
                 'status' => 'success',
-                'message' => 'Turno eliminado correctamente'
+                'message' => 'Expediente actualizado correctamente'
             ];
         } catch (\PDOException $e) {
+            $this->db->rollBack();
             return [
                 'status' => 'error',
                 'message' => 'Error en la base de datos: ' . $e->getMessage()
