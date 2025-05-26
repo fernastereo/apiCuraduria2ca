@@ -7,6 +7,7 @@ require_once 'functions/auth_functions.php';
 require_once 'controllers/AuthController.php';
 require_once 'controllers/UserController.php';
 require_once 'controllers/ExpedienteController.php';
+require_once 'controllers/CatalogoController.php';
 
 // Configuración de headers para API REST
 header("Access-Control-Allow-Origin: *");
@@ -29,6 +30,7 @@ $endpoint = $request[0] ?? '';
 $authController = new AuthController();
 $userController = new UserController();
 $expedienteController = new ExpedienteController();
+$catalogoController = new CatalogoController();
 
 // Respuesta por defecto
 $response = [
@@ -81,9 +83,9 @@ switch ($endpoint) {
                 case 'PUT':
                     $response = $expedienteController->update($expediente_id);
                     break;
-                case 'DELETE':
-                    $response = $expedienteController->delete($expediente_id);
-                    break;
+                // case 'DELETE':
+                //     $response = $expedienteController->delete($expediente_id);
+                //     break;
             }
         } else {
             // Rutas para la colección de expedientes
@@ -95,6 +97,18 @@ switch ($endpoint) {
                     $response = $expedienteController->create();
                     break;
             }
+        }
+        break;
+
+    case 'tipos-documento':
+        if ($method === 'GET') {
+            $response = $catalogoController->getTiposDocumento();
+        }
+        break;
+
+    case 'tipos-responsable':
+        if ($method === 'GET') {
+            $response = $catalogoController->getTiposResponsable();
         }
         break;
 
