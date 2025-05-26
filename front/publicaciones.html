@@ -20,13 +20,6 @@
                         <div class="col">
                             <select class="form-select form-select-sm" aria-label=".form-select-sm example" id="vigencia">
                                 <option selected>Vigencia</option>
-                                <option value="2023">2025</option>
-                                <option value="2023">2024</option>
-                                <option value="2023">2023</option>
-                                <option value="2022">2022</option>
-                                <option value="2021">2021</option>
-                                <option value="2020">2020</option>
-                                <option value="2019">2019</option>
                             </select>
                         </div>
                         <div class="col">
@@ -59,6 +52,24 @@
     </div>
 </body>
 <script>
+    // Función para generar las opciones de años en el select
+    const generarOpcionesAnios = () => {
+        const vigenciaSelect = document.querySelector('#vigencia');
+        const anioActual = new Date().getFullYear();
+        const anioMinimo = 2019;
+        
+        // Generar opciones desde el año actual hasta 2019
+        for (let anio = anioActual; anio >= anioMinimo; anio--) {
+            const option = document.createElement('option');
+            option.value = anio;
+            option.textContent = anio;
+            vigenciaSelect.appendChild(option);
+        }
+    };
+
+    // Llamar la función cuando se carga la página
+    document.addEventListener('DOMContentLoaded', generarOpcionesAnios);
+
     const fechapublicacion = document.querySelector('#fechapublicacion')
     const vigencia = document.querySelector('#vigencia')
     const proyecto = document.querySelector('#proyecto')
