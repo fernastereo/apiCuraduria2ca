@@ -116,7 +116,8 @@ class ExpedienteController {
                 'status' => 'success',
                 'message' => 'Turno creado correctamente',
                 'expediente_id' => $id,
-                'numturno' => $numturno
+                'numturno' => $numturno,
+                'vigencia' => $vigencia
             ];
         } catch (\PDOException $e) {
             $this->db->rollBack();
