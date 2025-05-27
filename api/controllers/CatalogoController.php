@@ -26,7 +26,7 @@ class CatalogoController {
         }
         
         try {
-            $sql = "SELECT id, codigo, nombre FROM in_tipodocumento ORDER BY nombre ASC";
+            $sql = "SELECT id, codigo, nombre FROM in_tipodocumento ORDER BY id ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $tiposDocumento = $stmt->fetchAll(PDO::FETCH_ASSOC);

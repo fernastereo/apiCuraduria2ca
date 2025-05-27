@@ -115,7 +115,8 @@ class ExpedienteController {
             return [
                 'status' => 'success',
                 'message' => 'Turno creado correctamente',
-                'expediente_id' => $id
+                'expediente_id' => $id,
+                'numturno' => $numturno
             ];
         } catch (\PDOException $e) {
             $this->db->rollBack();
@@ -455,7 +456,8 @@ class ExpedienteController {
                 AND e.id = re.expediente_id
                 AND re.tiporesponsable_id = tr.id
                 AND re.responsable_id = r.id
-                AND r.tipodocumento_id = td.id";
+                AND r.tipodocumento_id = td.id
+                ORDER BY e.vigencia DESC, e.numturno DESC, e.fecha ASC, e.hora ASC";
 
         // Agregar condición de búsqueda si existe
         if (isset($_GET['search']) && $searchType) {
