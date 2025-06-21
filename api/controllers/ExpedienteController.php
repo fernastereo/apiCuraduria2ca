@@ -41,18 +41,25 @@ class ExpedienteController {
         $tipovivienda_id = isset($data['tipovivienda_id']) ? htmlspecialchars(strip_tags($data['tipovivienda_id'])) : $this->getDefaultID('in_tipovivienda');
         $direccion = htmlspecialchars(strip_tags($data['direccion']));
         $user_id = htmlspecialchars(strip_tags($data['user_id']));
+        $estado_id = 1;
         
         try {
             $this->db->beginTransaction();
 
             // Insertar nuevo expediente
-            $sql = "INSERT INTO in_expediente (fecha, hora, vigencia, numturno, objeto_id, tipovivienda_id, direccion, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)"; 
+            $sql = "INSERT INTO in_expediente (fecha, hora, vigencia, numturno, objeto_id, tipovivienda_id, direccion, user_id, estado_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"; 
             
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$fecha, $hora, $vigencia, $numturno, $objeto_id, $tipovivienda_id, $direccion, $user_id]);
+            $stmt->execute([$fecha, $hora, $vigencia, $numturno, $objeto_id, $tipovivienda_id, $direccion, $user_id, $estado_id]);
             
             $id = $this->db->lastInsertId();
+
+            $sql = "INSERT INTO in_estadoexpediente (fecha, hora, expediente_id, user_id, estado_id)
+            VALUES (?, ?, ?, ?, ?)"; 
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$fecha, $hora, $id, $user_id, $estado_id]);
 
             // Guardar modalidades si existen
             if (!empty($data['modalidades']) && is_array($data['modalidades'])) {
@@ -151,7 +158,7 @@ class ExpedienteController {
             $searchType = isset($_GET['search']) ? $this->determineSearchType($_GET['search']) : null;
 
             // Consulta con todos los joins
-            $complSql = " ORDER BY fecha ASC, id ASC LIMIT :limit OFFSET :offset"; 
+            $complSql = " ORDER BY fecha DESC, vigencia DESC, numturno DESC, id ASC LIMIT :limit OFFSET :offset"; 
             $sql = $this->buildExpedienteQuery($complSql, $searchType);
             $sqlParams = $this->getQueryParams($searchType);
 
@@ -441,14 +448,15 @@ class ExpedienteController {
                     re.tiporesponsable_id, tr.nombre as tiporesponsable_nombre, 
                     re.responsable_id, r.nombre as responsable_nombre, r.tipodocumento_id, 
                     r.documento, r.telefono, r.email, 
-                    td.nombre as tipodocumento_nombre
+                    td.nombre as tipodocumento_nombre,
+                    s.nombre as estado_nombre, s.class as estado_class
                 FROM (
                         SELECT * FROM in_expediente ie
                         $complSql
                     ) e, in_objeto o, in_tipovivienda tv, 
                     in_modalidadexpediente me, in_tipomodalidad tm, in_tipolicencia tl, 
                     in_responsableexpediente re, in_tiporesponsable tr, 
-                    in_responsable r, in_tipodocumento td
+                    in_responsable r, in_tipodocumento td, in_estado s
                 WHERE e.objeto_id = o.id
                 AND e.tipovivienda_id = tv.id
                 AND e.id = me.expediente_id
@@ -458,6 +466,7 @@ class ExpedienteController {
                 AND re.tiporesponsable_id = tr.id
                 AND re.responsable_id = r.id
                 AND r.tipodocumento_id = td.id
+                AND e.estado_id = s.id
                 ORDER BY e.vigencia DESC, e.numturno DESC, e.fecha ASC, e.hora ASC";
 
         // Agregar condición de búsqueda si existe
@@ -527,6 +536,11 @@ class ExpedienteController {
                     'objeto' => [
                         'id' => $row['objeto_id'],
                         'nombre' => $row['objeto_nombre'],
+                    ],
+                    'estado' => [
+                        'id' => $row['estado_id'],
+                        'nombre' => $row['estado_nombre'],
+                        'class' => $row['estado_class'],
                     ],
                     'tipovivienda' => [
                         'id' => $row['tipovivienda_id'],
