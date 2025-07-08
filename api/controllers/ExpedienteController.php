@@ -152,7 +152,7 @@ class ExpedienteController {
             // parametros de paginacion
             $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
             $perPage = isset($_GET['per_page']) ? max(1, intval($_GET['per_page'])) : 10;
-            $offset = ($page - 1) * $perPage;
+            $offset = isset($_GET['offset']) ? max(0, intval($_GET['offset'])) : 0;
 
             // Determinar el tipo de búsqueda si existe
             $searchType = isset($_GET['search']) ? $this->determineSearchType($_GET['search']) : null;
@@ -369,9 +369,25 @@ class ExpedienteController {
                     $stmt->execute([$responsableData['documento']]);
                     $responsableExistente = $stmt->fetch(PDO::FETCH_ASSOC);
                     
-                    $responsable_id = $responsableExistente ? $responsableExistente['id'] : null;
+                    $responsable_id = null;
                     
-                    if (!$responsableExistente) {
+                    if ($responsableExistente) {
+                        // Si existe, actualizar sus datos
+                        $responsable_id = $responsableExistente['id'];
+                        $stmt = $this->db->prepare("UPDATE in_responsable SET 
+                                            nombre = ?, 
+                                            tipodocumento_id = ?, 
+                                            telefono = ?, 
+                                            email = ?
+                                        WHERE id = ?");
+                        $stmt->execute([
+                            $responsableData['nombre'],
+                            $responsableData['tipodocumento_id'],
+                            $responsableData['telefono'],
+                            $responsableData['email'],
+                            $responsable_id
+                        ]);
+                    } else {
                         // Si no existe, crear nuevo responsable
                         $stmt = $this->db->prepare("INSERT INTO in_responsable (
                                             nombre, tipodocumento_id, documento, telefono, email
