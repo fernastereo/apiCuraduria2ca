@@ -78,4 +78,73 @@ class CatalogoController {
             ];
         }
     }
+
+    /**
+     * Obtener todos los tipos de licencia con sus modalidades
+     * @return array Respuesta con los tipos de licencia y sus modalidades
+     */
+    public function getTiposLicencia() {
+        // Verificar autenticación
+        $token = getAuthToken();
+        
+        if (!$token || !($user_id = verifyValidToken($token))) {
+            http_response_code(401);
+            return [
+                'status' => 'error',
+                'message' => 'No autorizado'
+            ];
+        }
+
+        try {
+            $sql = "SELECT 
+                        tl.id as tipolicencia_id, 
+                        tl.codigo as tipolicencia_codigo,
+                        tl.nombre as tipolicencia_nombre,
+                        tm.id as tipomodalidad_id,
+                        tm.codigo as tipomodalidad_codigo,
+                        tm.nombre as tipomodalidad_nombre
+                    FROM in_tipolicencia tl
+                    LEFT JOIN in_tipomodalidad tm ON tl.id = tm.tipolicencia_id AND tm.tipo_registro = 'R'
+                    WHERE tl.tipo_registro = 'R'
+                    ORDER BY tl.nombre ASC, tm.nombre ASC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $tiposLicencia = [];
+            foreach ($results as $row) {
+                $licenciaId = $row['tipolicencia_id'];
+                
+                if (!isset($tiposLicencia[$licenciaId])) {
+                    $tiposLicencia[$licenciaId] = [
+                        'id' => $licenciaId,
+                        'codigo' => $row['tipolicencia_codigo'],
+                        'nombre' => $row['tipolicencia_nombre'],
+                        'modalidades' => []
+                    ];
+                }
+                
+                if ($row['tipomodalidad_id']) {
+                    $tiposLicencia[$licenciaId]['modalidades'][] = [
+                        'id' => $row['tipomodalidad_id'],
+                        'codigo' => $row['tipomodalidad_codigo'],
+                        'nombre' => $row['tipomodalidad_nombre']
+                    ];
+                }
+            }
+            
+            return [
+                'status' => 'success',
+                'data' => array_values($tiposLicencia),
+                'total' => count($tiposLicencia)
+            ];
+            
+        } catch (\PDOException $e) {
+            return [
+                'status' => 'error',
+                'message' => 'Error en la base de datos: ' . $e->getMessage()
+            ];
+        }
+    }
 } 

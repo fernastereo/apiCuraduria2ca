@@ -112,6 +112,12 @@ switch ($endpoint) {
         }
         break;
 
+    case 'tipos-licencia':
+        if ($method === 'GET') {
+            $response = $catalogoController->getTiposLicencia();
+        }
+        break;
+
     case 'logout':
         if ($method === 'POST') {
             $response = $authController->logout();
