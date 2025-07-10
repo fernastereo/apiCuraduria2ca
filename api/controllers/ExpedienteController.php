@@ -509,7 +509,7 @@ class ExpedienteController {
 
             // Solo actualizar estado si hubo cambios
             if ($cambiosRealizados) {
-                $estado_id = 3;
+                $estado_id = 2;
                 $fecha = date('Y-m-d');
                 $hora = date('H:i:s');
                 $sql = "INSERT INTO in_estadoexpediente (fecha, hora, expediente_id, user_id, estado_id)
@@ -524,9 +524,47 @@ class ExpedienteController {
             }
 
             $this->db->commit();
+
+            // Obtener datos actualizados del expediente
+            $sql = "SELECT e.id, e.estado_id, s.nombre as estado_nombre, s.class as estado_class,
+                        o.id as objeto_id, o.nombre as objeto_nombre
+                    FROM in_expediente e
+                    INNER JOIN in_estado s ON e.estado_id = s.id
+                    INNER JOIN in_objeto o ON e.objeto_id = o.id
+                    WHERE e.id = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$id]);
+            $expediente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Obtener modalidades actualizadas
+            $sql = "SELECT m.tipomodalidad_id as id, tm.nombre
+                    FROM in_modalidadexpediente m
+                    INNER JOIN in_tipomodalidad tm ON m.tipomodalidad_id = tm.id
+                    WHERE m.expediente_id = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$id]);
+            $modalidades = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Estructurar respuesta
+            $datosActualizados = [
+                'objeto' => [
+                    'id' => $expediente['objeto_id'],
+                    'nombre' => $expediente['objeto_nombre']
+                ],
+                'estado' => [
+                    'id' => $expediente['estado_id'],
+                    'nombre' => $expediente['estado_nombre'],
+                    'class' => $expediente['estado_class']
+                ],
+                'modalidades' => $modalidades
+            ];
+
             return [
                 'status' => 'success',
-                'message' => $cambiosRealizados ? 'Expediente actualizado correctamente' : 'No se detectaron cambios en el expediente'
+                'message' => $cambiosRealizados ? 'Expediente actualizado correctamente' : 'No se detectaron cambios en el expediente',
+                'expediente' => $datosActualizados
             ];
         } catch (\PDOException $e) {
             $this->db->rollBack();
