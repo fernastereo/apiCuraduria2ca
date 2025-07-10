@@ -517,6 +517,10 @@ class ExpedienteController {
                 
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([$fecha, $hora, $id, $user_id, $estado_id]);
+
+                $sql = "UPDATE in_expediente SET estado_id = ? WHERE id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$estado_id, $id]);
             }
 
             $this->db->commit();
