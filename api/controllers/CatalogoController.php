@@ -147,4 +147,39 @@ class CatalogoController {
             ];
         }
     }
+
+    /**
+     * Obtener todos los objetos de licencia
+     * @return array Respuesta con los objetos para un trámite de licencia
+     */
+    public function getObjetosLicencia() {
+        // Verificar autenticación
+        $token = getAuthToken();
+        
+        if (!$token || !($user_id = verifyValidToken($token))) {
+            http_response_code(401);
+            return [
+                'status' => 'error',
+                'message' => 'No autorizado'
+            ];
+        }
+
+        try {
+            $sql = "SELECT id, nombre FROM in_objeto WHERE tipo_registro = 'R' ORDER BY nombre ASC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            $objetosLicencia = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            return [
+                'status' => 'success',
+                'data' => $objetosLicencia,
+                'total' => count($objetosLicencia)
+            ];
+        } catch (\PDOException $e) {
+            return [
+                'status' => 'error',
+                'message' => 'Error en la base de datos: ' . $e->getMessage()
+            ];
+        }
+    }
 } 

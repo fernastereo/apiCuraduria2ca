@@ -99,6 +99,11 @@ switch ($endpoint) {
             }
         }
         break;
+    case 'expediente-formulario':
+        if ($method === 'POST') {
+            $response = $expedienteController->updateExpedienteFormulario($expediente_id);
+        }
+        break;
 
     case 'tipos-documento':
         if ($method === 'GET') {
@@ -115,6 +120,12 @@ switch ($endpoint) {
     case 'tipos-licencia':
         if ($method === 'GET') {
             $response = $catalogoController->getTiposLicencia();
+        }
+        break;
+
+    case 'objetos-licencia':
+        if ($method === 'GET') {
+            $response = $catalogoController->getObjetosLicencia();
         }
         break;
 
