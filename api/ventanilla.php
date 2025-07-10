@@ -100,8 +100,17 @@ switch ($endpoint) {
         }
         break;
     case 'expediente-formulario':
-        if ($method === 'POST') {
-            $response = $expedienteController->updateExpedienteFormulario($expediente_id);
+        $expediente_id = $request[1] ?? null;
+        
+        if ($expediente_id) {
+            if ($method === 'POST') {
+                $response = $expedienteController->updateExpedienteFormulario($expediente_id);
+            }
+        } else {
+            $response = [
+                'status' => 'error',
+                'message' => 'ID de expediente no proporcionado'
+            ];
         }
         break;
 

@@ -431,6 +431,84 @@ class ExpedienteController {
         }
     }
 
+    public function updateExpedienteFormulario($id) {
+        // Verificar autenticación
+        $token = getAuthToken();
+        
+        if (!$token || !($user_id = verifyValidToken($token))) {
+            http_response_code(401);
+            return [
+                'status' => 'error',
+                'message' => 'No autorizado'
+            ];
+        }
+
+        try {
+            // Verificar si el expediente existe
+            $stmt = $this->db->prepare("SELECT id FROM in_expediente WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            if ($stmt->rowCount() === 0) {
+                http_response_code(404);
+                return [
+                    'status' => 'error',
+                    'message' => 'Expediente no encontrado'
+                ];
+            }
+
+            // Obtener datos del body
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            // Validar datos
+            if (empty($data)) {
+                return [
+                    'status' => 'error',
+                    'message' => 'No se proporcionaron datos para actualizar'
+                ];
+            }
+
+            $this->db->beginTransaction();
+
+            if (isset($data['objeto_id'])) {
+                $sql = "UPDATE in_expediente SET objeto_id = ? WHERE id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$data['objeto_id'], $id]);
+            }
+
+            if (!empty($updateFields)) {
+                $params[] = $id;
+                $sql = "UPDATE in_expediente SET " . implode(", ", $updateFields) . " WHERE id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($params);
+            }
+
+            // Actualizar modalidades si se proporcionan
+            if (isset($data['modalidades']) && is_array($data['modalidades'])) {
+                // Eliminar modalidades existentes
+                $stmt = $this->db->prepare("DELETE FROM in_modalidadexpediente WHERE expediente_id = ?");
+                $stmt->execute([$id]);
+
+                // Insertar nuevas modalidades
+                $stmt = $this->db->prepare("INSERT INTO in_modalidadexpediente (expediente_id, tipomodalidad_id) VALUES (?, ?)");
+                foreach ($data['modalidades'] as $tipomodalidad_id) {
+                    $stmt->execute([$id, $tipomodalidad_id]);
+                }
+            }
+
+            $this->db->commit();
+            return [
+                'status' => 'success',
+                'message' => 'Expediente actualizado correctamente'
+            ];
+        } catch (\PDOException $e) {
+            $this->db->rollBack();
+            return [
+                'status' => 'error',
+                'message' => 'Error en la base de datos: ' . $e->getMessage()
+            ];
+        }
+    }
+
     /**
      * Determina el tipo de búsqueda basado en el valor proporcionado
      * @param string $search Valor a analizar
