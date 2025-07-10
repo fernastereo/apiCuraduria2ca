@@ -265,7 +265,7 @@ class ExpedienteController {
                 'message' => 'No autorizado'
             ];
         }
-        
+
         try {
             // Verificar si el expediente existe
             $stmt = $this->db->prepare("SELECT id FROM in_expediente WHERE id = ?");
@@ -444,8 +444,8 @@ class ExpedienteController {
         }
 
         try {
-            // Verificar si el expediente existe
-            $stmt = $this->db->prepare("SELECT id FROM in_expediente WHERE id = ?");
+            // Obtener datos actuales del expediente
+            $stmt = $this->db->prepare("SELECT id, objeto_id FROM in_expediente WHERE id = ?");
             $stmt->execute([$id]);
             
             if ($stmt->rowCount() === 0) {
@@ -455,6 +455,14 @@ class ExpedienteController {
                     'message' => 'Expediente no encontrado'
                 ];
             }
+
+            $expedienteActual = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Obtener modalidades actuales
+            $stmt = $this->db->prepare("SELECT tipomodalidad_id FROM in_modalidadexpediente WHERE expediente_id = ?");
+            $stmt->execute([$id]);
+            $modalidadesActuales = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            sort($modalidadesActuales); // Ordenar para comparación posterior
 
             // Obtener datos del body
             $data = json_decode(file_get_contents("php://input"), true);
@@ -469,36 +477,52 @@ class ExpedienteController {
 
             $this->db->beginTransaction();
 
-            if (isset($data['objeto_id'])) {
+            $cambiosRealizados = false;
+
+            // Verificar y actualizar objeto_id si hay cambios
+            if (isset($data['objeto_id']) && $data['objeto_id'] != $expedienteActual['objeto_id']) {
                 $sql = "UPDATE in_expediente SET objeto_id = ? WHERE id = ?";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([$data['objeto_id'], $id]);
+                $cambiosRealizados = true;
             }
 
-            if (!empty($updateFields)) {
-                $params[] = $id;
-                $sql = "UPDATE in_expediente SET " . implode(", ", $updateFields) . " WHERE id = ?";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute($params);
-            }
-
-            // Actualizar modalidades si se proporcionan
+            // Verificar y actualizar modalidades si hay cambios
             if (isset($data['modalidades']) && is_array($data['modalidades'])) {
-                // Eliminar modalidades existentes
-                $stmt = $this->db->prepare("DELETE FROM in_modalidadexpediente WHERE expediente_id = ?");
-                $stmt->execute([$id]);
+                $nuevasModalidades = $data['modalidades'];
+                sort($nuevasModalidades); // Ordenar para comparación
 
-                // Insertar nuevas modalidades
-                $stmt = $this->db->prepare("INSERT INTO in_modalidadexpediente (expediente_id, tipomodalidad_id) VALUES (?, ?)");
-                foreach ($data['modalidades'] as $tipomodalidad_id) {
-                    $stmt->execute([$id, $tipomodalidad_id]);
+                // Comparar arrays ordenados
+                if ($modalidadesActuales != $nuevasModalidades) {
+                    // Eliminar modalidades existentes
+                    $stmt = $this->db->prepare("DELETE FROM in_modalidadexpediente WHERE expediente_id = ?");
+                    $stmt->execute([$id]);
+
+                    // Insertar nuevas modalidades
+                    $stmt = $this->db->prepare("INSERT INTO in_modalidadexpediente (expediente_id, tipomodalidad_id) VALUES (?, ?)");
+                    foreach ($nuevasModalidades as $tipomodalidad_id) {
+                        $stmt->execute([$id, $tipomodalidad_id]);
+                    }
+                    $cambiosRealizados = true;
                 }
+            }
+
+            // Solo actualizar estado si hubo cambios
+            if ($cambiosRealizados) {
+                $estado_id = 3;
+                $fecha = date('Y-m-d');
+                $hora = date('H:i:s');
+                $sql = "INSERT INTO in_estadoexpediente (fecha, hora, expediente_id, user_id, estado_id)
+                VALUES (?, ?, ?, ?, ?)"; 
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$fecha, $hora, $id, $user_id, $estado_id]);
             }
 
             $this->db->commit();
             return [
                 'status' => 'success',
-                'message' => 'Expediente actualizado correctamente'
+                'message' => $cambiosRealizados ? 'Expediente actualizado correctamente' : 'No se detectaron cambios en el expediente'
             ];
         } catch (\PDOException $e) {
             $this->db->rollBack();
