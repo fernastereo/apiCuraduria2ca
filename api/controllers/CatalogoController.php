@@ -106,7 +106,7 @@ class CatalogoController {
                     FROM in_tipolicencia tl
                     LEFT JOIN in_tipomodalidad tm ON tl.id = tm.tipolicencia_id AND tm.tipo_registro = 'R'
                     WHERE tl.tipo_registro = 'R'
-                    ORDER BY tl.nombre ASC, tm.nombre ASC";
+                    ORDER BY tl.orden, tl.nombre ASC, tm.nombre ASC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
