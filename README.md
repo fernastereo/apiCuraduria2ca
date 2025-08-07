@@ -1,76 +1,189 @@
-# apiCuradurias
-Api for services on curadurias (the real one)😎
+# API Curaduría 2 Cartagena
 
-#### Estado de un Proyecto
+API y Frontend para servicios de la Curaduría 2 de Cartagena.
 
-`method: get`
+## Estructura del Proyecto
 
-`api/router.php/radicacion/{curaduria}/{num_radicacion}/{año_radicacion}`
+```
+apiCuraduria2ca/
+├── api/                # Backend API
+│   ├── controllers/    # Controladores de la API
+│   ├── config/         # Configuración de base de datos y variables
+│   ├── functions/      # Funciones auxiliares
+│   └── ventanilla.php  # Punto de entrada principal de la API
+├── front/              # Frontend
+│   ├── css/            # Estilos
+│   ├── js/             # Scripts
+│   └── *.html          # Páginas HTML
+└── vendor/             # Dependencias de Composer
+```
 
-#### Consultar una Resolución
+## Endpoints de la API
 
-`method: get`
+### Autenticación
 
-`api/router.php/resolucion/{curaduria}/{num_resolucion}/{año_resolucion}`
+#### Login
+- **URL**: `/login`
+- **Método**: `POST`
+- **Descripción**: Autenticar usuario
+- **Respuesta exitosa**: Token JWT
+- **Auth requerida**: No
 
-#### Listado de Resoluciones
+#### Registro
+- **URL**: `/register`
+- **Método**: `POST`
+- **Descripción**: Registrar nuevo usuario
+- **Auth requerida**: No
 
-`method: get`
+#### Verificar Token
+- **URL**: `/verify-token`
+- **Método**: `GET`
+- **Descripción**: Verificar validez del token JWT
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Auth requerida**: Sí
 
-`api/router.php/resoluciones/{curaduria}/{fechaini}/{fechafin}`
+#### Logout
+- **URL**: `/logout`
+- **Método**: `POST`
+- **Descripción**: Cerrar sesión
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Auth requerida**: Sí
 
-#### Publicar un documento
+#### Información de Usuario
+- **URL**: `/user`
+- **Método**: `GET`
+- **Descripción**: Obtener información del usuario actual
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Auth requerida**: Sí
 
-`method: post`
+### Expedientes
 
-`api/router.php/publicacion/{curaduria}`
+#### Consultar Expediente
+- **URL**: `/expedientes`
+- **Método**: `GET`
+- **Parámetros**:
+  - `idradicado`: Número de radicado
+  - `vigencia`: Año del expediente
+- **Ejemplo**: `/expedientes?idradicado=1&vigencia=2024`
+- **Respuesta**: Información detallada del expediente incluyendo:
+  - Número de Expediente (formato: 13001-2-24-0001)
+  - Solicitante
+  - Dirección y Barrio
+  - Tipo de Licencia
+  - Modalidad
+  - Estado
+  - Fechas de radicación y última actualización
+- **Auth requerida**: No
 
-    Parámetros:
-    - fechapublicacion (string)
-    - referencia (string)
-    - archivo (file)
-    - estado (integer [1|0])
+### Publicaciones
 
-#### Listado de Publicaciones
+#### Listar Publicaciones
+- **URL**: `/publicaciones`
+- **Método**: `GET`
+- **Descripción**: Obtener todas las publicaciones
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Auth requerida**: Sí
 
-`method: get`
+#### Buscar por Rango de Fechas
+- **URL**: `/publicaciones`
+- **Método**: `GET`
+- **Parámetros**:
+  - `fecha_inicio`: Fecha inicial (YYYY-MM-DD)
+  - `fecha_fin`: Fecha final (YYYY-MM-DD)
+- **Ejemplo**: `/publicaciones?fecha_inicio=2024-01-01&fecha_fin=2024-12-31`
+- **Auth requerida**: No
 
-`api/router.php/publicaciones/{curaduria}/{fechaini}/{fechafin}`
+#### Obtener Publicación
+- **URL**: `/publicaciones/{id}`
+- **Método**: `GET`
+- **Descripción**: Obtener una publicación específica
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Auth requerida**: Sí
 
-#### Enviar foto de Valla del proyecto
+#### Crear Publicación
+- **URL**: `/publicaciones`
+- **Método**: `POST`
+- **Formato**: `multipart/form-data`
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Parámetros**:
+  - `fecha`: Fecha del documento
+  - `fechapublicacion`: Fecha de publicación
+  - `referencia`: Referencia del documento
+  - `estado`: Estado de la publicación
+  - `tipopublicacion_id`: ID del tipo de publicación
+  - `publicacionFile`: Archivo PDF
+- **Auth requerida**: Sí
 
-`method: post`
+#### Actualizar Publicación
+- **URL**: `/publicaciones/{id}`
+- **Método**: `POST`
+- **Headers**: 
+  - `Content-Type: multipart/form-data`
+  - `Authorization: Bearer {token}`
+- **Parámetros**:
+  - `_method`: 'PUT' (requerido)
+  - Demás campos igual que en crear
+- **Auth requerida**: Sí
 
-`api/router.php/valla/{curaduria}`
+#### Eliminar Publicación
+- **URL**: `/publicaciones/{id}`
+- **Método**: `DELETE`
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Auth requerida**: Sí
 
-    Parámetros:
-    - proyecto (string)
-    - vigencia (string)
-    - comentarios (string)
-    - archivo (file)
-    - email (string)
+### Tipos de Publicación
 
-#### Enviar comprobantes de pago
+#### Listar Tipos
+- **URL**: `/tipos-publicacion`
+- **Método**: `GET`
+- **Descripción**: Obtener lista de tipos de publicación
+- **Auth requerida**: No
 
-`method: post`
+#### Obtener Tipo
+- **URL**: `/tipos-publicacion/{id}`
+- **Método**: `GET`
+- **Descripción**: Obtener un tipo de publicación específico
+- **Headers requeridos**: `Authorization: Bearer {token}`
+- **Auth requerida**: Sí
 
-`api/router.php/pago/{curaduria}`
+## Frontend
 
-    Parámetros:
-    - proyecto (string)
-    - vigencia (string)
-    - comentarios (string)
-    - archivo (file)
-    - email (string)
+### Páginas Disponibles
 
-#### Registrar PQR
+#### Consulta de Expedientes
+- **Archivo**: `estado-expediente.html`
+- **Funcionalidad**: Consulta de estado de expedientes por número y año
+- **Características**:
+  - Formulario de búsqueda
+  - Visualización detallada de información
+  - Manejo de errores y estados de carga
+  - Formato especial para número de radicación
 
-`method: post`
+#### Publicaciones
+- **Archivo**: `publicaciones.html`
+- **Funcionalidad**: Gestión y consulta de publicaciones
+- **Características**:
+  - Búsqueda por rango de fechas
+  - Paginación del lado del cliente (10 registros por página)
+  - Descarga de documentos
+  - Estilos tipo badge para tipos de publicación
 
-`api/router.php/pqr/{curaduria}`
 
-    Parámetros:
-    - nombre (string)
-    - email (string)
-    - asunto (string)
-    - comentario (string)
+## Instalación y Despliegue
+
+1. Clonar el repositorio
+2. Configurar el archivo `api/config.php` con las credenciales de base de datos y AWS
+3. Instalar dependencias: `composer install`
+4. Configurar el servidor web para que apunte a la carpeta raíz del proyecto
+5. Asegurar que el servidor web tiene permisos de escritura en las carpetas necesarias
+
+## Tecnologías Utilizadas
+
+- Backend:
+  - PHP 7.4+
+  - MySQL/MariaDB
+  - AWS S3 para almacenamiento de archivos
+- Frontend:
+  - Vue.js 3
+  - HTML5/CSS3
+  - Font Awesome para iconos
