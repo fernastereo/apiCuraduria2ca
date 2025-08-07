@@ -1,5 +1,5 @@
 <?php
-// index.php - Punto de entrada principal de la API
+// ventanilla.php - Punto de entrada principal de la API
 
 // Cargar los archivos de configuración y funciones
 require_once 'config/database.php';
@@ -8,12 +8,14 @@ require_once 'controllers/AuthController.php';
 require_once 'controllers/UserController.php';
 require_once 'controllers/ExpedienteController.php';
 require_once 'controllers/CatalogoController.php';
+require_once 'controllers/PublicacionController.php';
 
 // Configuración de headers para API REST
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Max-Age: 3600");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Manejo de solicitudes OPTIONS para CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -31,6 +33,7 @@ $authController = new AuthController();
 $userController = new UserController();
 $expedienteController = new ExpedienteController();
 $catalogoController = new CatalogoController();
+$publicacionController = new PublicacionController();
 
 // Respuesta por defecto
 $response = [
@@ -57,12 +60,6 @@ switch ($endpoint) {
             $response = $userController->getUserInfo();
         }
         break;
-        
-    case 'menu':
-        if ($method === 'GET') {
-            $response = $userController->getUserInfo();
-        }
-        break;
 
     case 'verify-token':
         if($method === 'GET'){
@@ -71,70 +68,63 @@ switch ($endpoint) {
         break;
 
     case 'expedientes':
-        // Si hay un segundo segmento en la URL, es el ID del expediente
-        $expediente_id = $request[1] ?? null;
+        if ($method === 'GET') {
+            // Consulta por radicado y vigencia
+            if (isset($_GET['idradicado']) && isset($_GET['vigencia'])) {
+                $response = $expedienteController->getByIdYear(
+                    $_GET['idradicado'],
+                    $_GET['vigencia']
+                );
+            }
+        }
+        break;
+
+    case 'publicaciones':
+        $publicacion_id = $request[1] ?? null;
         
-        if ($expediente_id) {
-            // Rutas para un expediente específico
-            switch ($method) {
-                case 'GET':
-                    $response = $expedienteController->getById($expediente_id);
-                    break;
-                case 'PUT':
-                    $response = $expedienteController->update($expediente_id);
-                    break;
-                // case 'DELETE':
-                //     $response = $expedienteController->delete($expediente_id);
-                //     break;
+        // Ruta para búsqueda por rango de fechas
+        if($method === 'GET' && isset($_GET['fecha_inicio']) && isset($_GET['fecha_fin'])) {
+            $response = $publicacionController->getByDateRange(
+                $_GET['fecha_inicio'],
+                $_GET['fecha_fin']
+            );
+        }
+        // Rutas existentes
+        else if($publicacion_id){
+            if($method === 'GET'){
+                $response = $publicacionController->getById($publicacion_id);
+            }
+            if($method === 'POST' && isset($_POST['_method']) && $_POST['_method'] === 'PUT'){
+                $response = $publicacionController->update($publicacion_id);
+            }
+            if($method === 'DELETE'){
+                $response = $publicacionController->delete($publicacion_id);
             }
         } else {
-            // Rutas para la colección de expedientes
+            if($method === 'GET'){
+                $response = $publicacionController->getAll();
+            }
+            if($method === 'POST'){
+                $response = $publicacionController->create();
+            }
+        }
+        break;
+
+    case 'tipos-publicacion':
+        $tipo_id = $request[1] ?? null;
+        
+        if ($tipo_id) {
             switch ($method) {
                 case 'GET':
-                    $response = $expedienteController->getAll();
+                    $response = $catalogoController->getTipoPublicacionById($tipo_id);
                     break;
-                case 'POST':
-                    $response = $expedienteController->create();
-                    break;
-            }
-        }
-        break;
-    case 'expediente-formulario':
-        $expediente_id = $request[1] ?? null;
-        
-        if ($expediente_id) {
-            if ($method === 'POST') {
-                $response = $expedienteController->updateExpedienteFormulario($expediente_id);
             }
         } else {
-            $response = [
-                'status' => 'error',
-                'message' => 'ID de expediente no proporcionado'
-            ];
-        }
-        break;
-
-    case 'tipos-documento':
-        if ($method === 'GET') {
-            $response = $catalogoController->getTiposDocumento();
-        }
-        break;
-
-    case 'tipos-responsable':
-        if ($method === 'GET') {
-            $response = $catalogoController->getTiposResponsable();
-        }
-        break;
-
-    case 'tipos-licencia':
-        if ($method === 'GET') {
-            $response = $catalogoController->getTiposLicencia();
-        }
-        break;
-
-    case 'objetos-licencia':
-        if ($method === 'GET') {
-            $response = $catalogoController->getObjetosLicencia();
+            switch ($method) {
+                case 'GET':
+                    $response = $catalogoController->getTiposPublicacion();
+                    break;
+            }
         }
         break;
 

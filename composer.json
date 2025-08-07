@@ -1,14 +1,14 @@
 {
-    "name": "fernastereo/api-curadurias",
-    "description": "api for webservices on curadurias",
-    "require": {
-        "aws/aws-sdk-php": "^3.188"
-    },
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Fernando Cueto",
-            "email": "fernandoecueto@gmail.com"
-        }
-    ]
+  "name": "fernastereo/api-curadurias",
+  "description": "api for webservices on curadurias",
+  "require": {
+    "aws/aws-sdk-php": "^3.275"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Fernando Cueto",
+      "email": "fernandoecueto@gmail.com"
+    }
+  ]
 }

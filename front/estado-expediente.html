@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentación - Curaduría 2 Cartagena</title>
+    <title>Consulta de Expedientes - Curaduría 2 Cartagena</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,8 +19,9 @@
             <div class="header-container">
                 <!-- Logo -->
                 <div class="logo">
-                  <a class="fusion-no-lightbox" href="https://curaduria2cartagena.com/" target="_self" aria-label="Logo-curaduria-cartagena2">
-                    <img class="logo-img" decoding="async" width="229" height="112" src="images/Logo-curaduria-cartagena2-200x98.png" alt="" class="img-responsive wp-image-25" sizes="(max-width: 640px) 100vw, 200px"></a>
+                    <a href="https://curaduria2cartagena.com/" target="_self" aria-label="Logo-curaduria-cartagena2">
+                        <img class="logo-img" decoding="async" width="229" height="112" src="images/Logo-curaduria-cartagena2-200x98.png" alt="Logo Curaduría 2 Cartagena" class="img-responsive wp-image-25">
+                    </a>
                 </div>
                 
                 <!-- Navigation -->
@@ -34,127 +35,100 @@
                 
                 <!-- Right side -->
                 <div class="header-right">
-                    <img src="images/Logo-gov.co_.png" alt="">
-                    <img src="images/logo-ITA.png" alt="">
-                    <div class="search-btn" @click="toggleSearch">
-                        <i class="fas fa-search"></i>
-                        <div class="fusion-search-field search-field">
-                          <label class="search-label"><span class="screen-reader-text">Buscar:</span>
-                            <input type="search" value="" name="s" class="s" placeholder="Buscar" required="" aria-required="true" aria-label="Buscar">
-                          </label>
-                        </div>
-                    </div>
+                    <img src="images/Logo-gov.co_.png" alt="Logo Gov.co">
+                    <img src="images/logo-ITA.png" alt="Logo ITA">
                 </div>
-
-                <!-- Mobile menu button -->
-                <button class="mobile-menu-btn" @click="mobileMenuOpen = !mobileMenuOpen">
-                    <i class="fas fa-bars"></i>
-                </button>
             </div>
-
-            <!-- Mobile Navigation -->
-            <nav class="mobile-nav" :class="{ show: mobileMenuOpen }">
-                <a href="https://curaduria2cartagena.com/">Inicio</a>
-                <a href="https://curaduria2cartagena.com/quienes-somos/">Quiénes somos</a>
-                <a href="https://curaduria2cartagena.com/tramites/">Atención y servicios</a>
-                <a href="https://curaduria2cartagena.com/documentacion/">Documentación</a>
-                <a href="https://curaduria2cartagena.com/contactanos/">Participa</a>
-            </nav>
         </header>
-
-        <!-- Hero Image -->
-        <section class="hero">
-            <div class="hero-overlay"></div>
-        </section>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Title Section -->
             <div class="title-section">
                 <h1 class="main-title">
-                    Publicaciones
+                    Consulta de Expedientes
                 </h1>
                 <div class="title-underline"></div>
             </div>
 
             <!-- Formulario de búsqueda -->
             <div class="search-form-container">
-                <form @submit.prevent="buscarPublicaciones" class="date-search-form">
+                <form @submit.prevent="consultarExpediente" class="expediente-search-form">
                     <div class="form-group">
-                        <label for="fecha_inicio">Fecha Desde:</label>
-                        <input type="date" id="fecha_inicio" v-model="fechaInicio" required>
+                        <label for="numero">Número de Expediente:</label>
+                        <input 
+                            type="text" 
+                            id="numero" 
+                            v-model="numeroExpediente" 
+                            required 
+                            placeholder="Ej: 0001"
+                        >
                     </div>
                     <div class="form-group">
-                        <label for="fecha_fin">Fecha Hasta:</label>
-                        <input type="date" id="fecha_fin" v-model="fechaFin" required>
+                        <label for="año">Año:</label>
+                        <input 
+                            type="number" 
+                            id="año" 
+                            v-model="año" 
+                            required 
+                            :max="currentYear"
+                            placeholder="Ej: 2025"
+                        >
                     </div>
                     <div class="form-buttons">
-                        <button type="submit" class="btn-search">Buscar</button>
+                        <button type="submit" class="btn-search">Consultar</button>
                         <button type="button" class="btn-clear" @click="limpiarBusqueda">Limpiar</button>
                     </div>
                 </form>
             </div>
 
-            <!-- Tabla de resultados -->
-            <div class="table-container" v-if="publicaciones.length > 0">
-                <table class="publications-table">
-                    <thead>
-                      <tr>
-                          <th>Referencia</th>
-                          <th>Fecha de Publicación</th>
-                          <th>Tipo de Publicación</th>
-                          <th>Archivo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="pub in publicacionesPaginadas" :key="pub.id">
-                            <td>{{ pub.referencia }}</td>
-                            <td>{{ formatearFecha(pub.fechapublicacion) }}</td>
-                            <td>
-                                <span :class="['badge', getBadgeClass(pub.tipopublicacion_id)]">
-                                    {{ pub.tipo_descripcion }}
-                                </span>
-                            </td>
-                            <td>
-                                <button class="btn-download" @click="descargarArchivo(pub.archivo)">
-                                  <i class="fa fa-print"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- Paginación -->
-                <div class="pagination" v-if="totalPaginas > 1">
-                    <button 
-                        class="btn-page" 
-                        :disabled="paginaActual === 1"
-                        @click="paginaActual--"
-                    >
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    
-                    <button 
-                        v-for="pagina in totalPaginas" 
-                        :key="pagina"
-                        class="btn-page" 
-                        :class="{ active: pagina === paginaActual }"
-                        @click="paginaActual = pagina"
-                    >
-                        {{ pagina }}
-                    </button>
-                    
-                    <button 
-                        class="btn-page" 
-                        :disabled="paginaActual === totalPaginas"
-                        @click="paginaActual++"
-                    >
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+            <!-- Resultado de la búsqueda -->
+            <div v-if="expediente" class="expediente-result">
+                <h2>Información del Expediente</h2>
+                <div class="expediente-info">
+                                          <div class="info-group">
+                          <label>Número de Expediente:</label>
+                          <span>{{ formatearRadicado(expediente.idradicado, expediente.vigencia) }}</span>
+                      </div>
+                    <div class="info-group">
+                        <label>Solicitante:</label>
+                        <span>{{ expediente.solicitante }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Dirección:</label>
+                        <span>{{ expediente.direccion }} - {{ expediente.barrio }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Tipo de Licencia:</label>
+                        <span>{{ expediente.tipolicencia }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Modalidad:</label>
+                        <span>{{ expediente.modalidad }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Fecha de Radicación:</label>
+                        <span>{{ formatearFecha(expediente.fecharadicado) }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Estado:</label>
+                        <span>{{ expediente.estado }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Última Actualización:</label>
+                        <span>{{ formatearFecha(expediente.fechaultimoestado) }}</span>
+                    </div>
                 </div>
             </div>
-            <div v-else-if="busquedaRealizada" class="no-results">
-                No se encontraron publicaciones en el rango de fechas seleccionado.
+            <!-- Loading spinner -->
+            <div v-if="loading" class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Consultando expediente...</p>
+            </div>
+
+            <!-- Error message -->
+            <div v-else-if="error" class="error-message">
+                {{ error }}
             </div>
         </main>
 
@@ -265,69 +239,45 @@
         createApp({
             data() {
                 return {
-                    mobileMenuOpen: false,
-                    fechaInicio: '',
-                    fechaFin: '',
-                    publicaciones: [],
+                    numeroExpediente: '',
+                    año: new Date().getFullYear(),
+                    expediente: null,
                     busquedaRealizada: false,
-                    paginaActual: 1,
-                    registrosPorPagina: 10,
-                    tiposPublicacion: {},
-                    badgeClasses: {
-                        1: 'badge-resolucion',
-                        2: 'badge-citacion',
-                        3: 'badge-notificacion',
-                        4: 'badge-aviso'
-                    }
-                }
-            },
-            created() {
-                this.cargarTiposPublicacion();
-            },
-            computed: {
-                totalPaginas() {
-                    return Math.ceil(this.publicaciones.length / this.registrosPorPagina);
-                },
-                publicacionesPaginadas() {
-                    const inicio = (this.paginaActual - 1) * this.registrosPorPagina;
-                    const fin = inicio + this.registrosPorPagina;
-                    return this.publicaciones.slice(inicio, fin);
-                }
-            },
-            watch: {
-                // Resetear a la primera página cuando cambian los resultados
-                publicaciones() {
-                    this.paginaActual = 1;
+                    currentYear: new Date().getFullYear(),
+                    error: null,
+                    loading: false
                 }
             },
             methods: {
-                toggleSearch() {
-                    console.log('Función de búsqueda');
-                },
-                async buscarPublicaciones() {
+                async consultarExpediente() {
+                    this.loading = true;
+                    this.error = null;
                     try {
-                        const response = await fetch(`${API_URL}/publicaciones?fecha_inicio=${this.fechaInicio}&fecha_fin=${this.fechaFin}`);
+                        const response = await fetch(`${API_URL}/expedientes?idradicado=${this.numeroExpediente}&vigencia=${this.año}`);
                         const data = await response.json();
                         
-                        if (data.status === 'success') {
-                            this.publicaciones = data.data;
+                        if (data.status === 'success' && data.data) {
+                            this.expediente = data.data;
                         } else {
-                            console.error('Error:', data.message);
-                            this.publicaciones = [];
+                            this.expediente = null;
+                            this.error = 'No se encontró información para el expediente consultado';
                         }
                         this.busquedaRealizada = true;
                     } catch (error) {
-                        console.error('Error al buscar publicaciones:', error);
-                        this.publicaciones = [];
+                        console.error('Error al consultar expediente:', error);
+                        this.expediente = null;
+                        this.error = 'Ocurrió un error al consultar el expediente. Por favor, intente nuevamente.';
                         this.busquedaRealizada = true;
+                    } finally {
+                        this.loading = false;
                     }
                 },
                 limpiarBusqueda() {
-                    this.fechaInicio = '';
-                    this.fechaFin = '';
-                    this.publicaciones = [];
+                    this.numeroExpediente = '';
+                    this.año = this.currentYear;
+                    this.expediente = null;
                     this.busquedaRealizada = false;
-                    this.paginaActual = 1;
+                    this.error = null;
                 },
                 formatearFecha(fecha) {
                     return new Date(fecha).toLocaleDateString('es-ES', {
@@ -336,26 +286,15 @@
                         year: 'numeric'
                     });
                 },
-                descargarArchivo(archivo) {
-                    window.open(`${AWS_URL}/${archivo}`, '_blank');
-                },
-                async cargarTiposPublicacion() {
-                    try {
-                        const response = await fetch(`${API_URL}/tipos-publicacion`);
-                        const data = await response.json();
-                        if (data.status === 'success') {
-                            // Convertir el array a un objeto para fácil acceso
-                            this.tiposPublicacion = data.data.reduce((acc, tipo) => {
-                                acc[tipo.id] = tipo;
-                                return acc;
-                            }, {});
-                        }
-                    } catch (error) {
-                        console.error('Error al cargar tipos de publicación:', error);
-                    }
-                },
-                getBadgeClass(tipoId) {
-                    return this.badgeClasses[tipoId] || 'badge-default';
+                formatearRadicado(idradicado, vigencia) {
+                    // Obtener los últimos dos dígitos del año
+                    const añoCorto = vigencia.toString().slice(-2);
+                    
+                    // Formatear el idradicado con ceros a la izquierda
+                    const idFormateado = idradicado.toString().padStart(4, '0');
+                    
+                    // Retornar el formato completo
+                    return `13001-2-${añoCorto}-${idFormateado}`;
                 }
             }
         }).mount('#app');

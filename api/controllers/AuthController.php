@@ -23,6 +23,7 @@ class AuthController {
         
         // Limpiar y validar datos
         $username = htmlspecialchars(strip_tags($data['username']));
+        $name = htmlspecialchars(strip_tags($data['name']));
         $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
         $password = $data['password'];
         
@@ -49,9 +50,9 @@ class AuthController {
             }
             
             // Insertar nuevo usuario
-            $sql = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
+            $sql = "INSERT INTO users (username, email, password, name) VALUES (?, ?, ?, ?)";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$username, $email, $password_hash]);
+            $stmt->execute([$username, $email, $password_hash, $name]);
             
             return [
                 'status' => 'success',
