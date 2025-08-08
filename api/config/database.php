@@ -13,7 +13,7 @@ class Database {
     public function __construct() {
       // Cargar configuración desde archivo externo
       // Ajusta la ruta según donde esté ubicado tu archivo env.php
-        $config = require dirname(__DIR__) . '..\config.php';
+        $config = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config.php';
         
         // Asignar valores de configuración
         $this->HOST = $config['HOST'];

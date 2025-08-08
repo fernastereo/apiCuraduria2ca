@@ -126,7 +126,9 @@ class PublicacionController {
     }
 
     public function create() {
+
         try {
+
             // Validar y obtener los datos del POST
             $data = [
               'fecha' => $_POST['fecha'] ?? null,
@@ -152,11 +154,11 @@ class PublicacionController {
                     'received_data' => $data,
                     'required_fields' => ['fecha', 'fechapublicacion', 'referencia', 'estado', 'tipopublicacion_id']
                 ];
-            }
+            }            
 
             // Preparar la consulta SQL
             $query = "INSERT INTO publicaciones (fecha, fechapublicacion, referencia, archivo, estado, tipopublicacion_id) 
-                      VALUES (:fecha, :fechapublicacion, :referencia, :archivo, :estado, :tipopublicacion_id)";
+                    VALUES (:fecha, :fechapublicacion, :referencia, :archivo, :estado, :tipopublicacion_id)";
             
             $stmt = $this->pdo->prepare($query);
             $result = $stmt->execute([
@@ -169,7 +171,9 @@ class PublicacionController {
             ]);
 
             require '../vendor/autoload.php';
-            $config =  require dirname(__DIR__) . '..\config.php';;
+
+            $config = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config.php';
+
             $s3 = new Aws\S3\S3Client([
                 'version' => 'latest',
                 'region' => 'us-east-2',
@@ -267,7 +271,7 @@ class PublicacionController {
             // Si hay un nuevo archivo, actualizarlo en S3 manteniendo el mismo nombre
             if(isset($_FILES['publicacionFile']) && $_FILES['publicacionFile']['error'] === UPLOAD_ERR_OK){
                 require '../vendor/autoload.php';
-                $config =  require dirname(__DIR__) . '..\config.php';;
+                $config = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config.php';
                 $s3 = new Aws\S3\S3Client([
                     'version' => 'latest',
                     'region' => 'us-east-2',
