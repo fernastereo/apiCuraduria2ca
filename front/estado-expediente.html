@@ -20,9 +20,8 @@
             <div class="header-container">
                 <!-- Logo -->
                 <div class="logo">
-                    <a href="https://curaduria2cartagena.com/" target="_self" aria-label="Logo-curaduria-cartagena2">
-                        <img class="logo-img" decoding="async" width="229" height="112" src="images/Logo-curaduria-cartagena2-200x98.png" alt="Logo Curaduría 2 Cartagena" class="img-responsive wp-image-25">
-                    </a>
+                  <a class="fusion-no-lightbox" href="https://curaduria2cartagena.com/" target="_self" aria-label="Logo-curaduria-cartagena2">
+                    <img class="logo-img" decoding="async" width="229" height="112" src="images/Logo-curaduria-cartagena2-200x98.png" alt="" class="img-responsive wp-image-25" sizes="(max-width: 640px) 100vw, 200px"></a>
                 </div>
                 
                 <!-- Navigation -->
@@ -36,11 +35,38 @@
                 
                 <!-- Right side -->
                 <div class="header-right">
-                    <img src="images/Logo-gov.co_.png" alt="Logo Gov.co">
-                    <img src="images/logo-ITA.png" alt="Logo ITA">
+                    <img src="images/Logo-gov.co_.png" alt="">
+                    <img src="images/logo-ITA.png" alt="">
+                    <div class="search-btn" @click="toggleSearch">
+                        <i class="fas fa-search"></i>
+                        <div class="fusion-search-field search-field">
+                          <label class="search-label"><span class="screen-reader-text">Buscar:</span>
+                            <input type="search" value="" name="s" class="s" placeholder="Buscar" required="" aria-required="true" aria-label="Buscar">
+                          </label>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Mobile menu button -->
+                <button class="mobile-menu-btn" @click="mobileMenuOpen = !mobileMenuOpen">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
+
+            <!-- Mobile Navigation -->
+            <nav class="mobile-nav" :class="{ show: mobileMenuOpen }">
+                <a href="https://curaduria2cartagena.com/">Inicio</a>
+                <a href="https://curaduria2cartagena.com/quienes-somos/">Quiénes somos</a>
+                <a href="https://curaduria2cartagena.com/tramites/">Atención y servicios</a>
+                <a href="https://curaduria2cartagena.com/documentacion/">Documentación</a>
+                <a href="https://curaduria2cartagena.com/contactanos/">Participa</a>
+            </nav>
         </header>
+
+        <!-- Hero Image -->
+        <section class="hero">
+            <div class="hero-overlay"></div>
+        </section>
 
         <!-- Main Content -->
         <main class="main-content">
