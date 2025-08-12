@@ -14,17 +14,6 @@ class CatalogoController {
      * @return array Respuesta con los tipos de publicación
      */
     public function getTiposPublicacion() {
-        // Verificar autenticación
-        $token = getAuthToken();
-        
-        if (!$token || !($user_id = verifyValidToken($token))) {
-            http_response_code(401);
-            return [
-                'status' => 'error',
-                'message' => 'No autorizado'
-            ];
-        }
-
         try {
             $sql = "SELECT id, descripcion FROM tipopublicacion ORDER BY descripcion ASC";
             $stmt = $this->db->prepare($sql);
