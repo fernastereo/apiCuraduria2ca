@@ -320,35 +320,35 @@ border-radius: 20px;
   padding: 2px 15px;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: bold;
   text-align: center;
   white-space: nowrap;
   width: 210px;
 }
 
-.badge-resolucion {
-  background-color: #3a4fc4;
-  color: white;
+.badge-comunicaciones {
+  background-color: #dbeafe;
+  color: #193cb8;
 }
 
-.badge-citacion {
-  background-color: #f73224;
-  color: white;
+.badge-edicto {
+  background-color: #dcfce7;
+  color: #016630;
 }
 
 .badge-notificacion {
-  background-color: #7ba56e;
-  color: white;
+  background-color: #f3e8ff;
+  color: #6e11b0;
 }
 
 .badge-aviso {
-  background-color: #6b6667;
-  color: white;
+  background-color: #fef9c2;
+  color: #894b00;
 }
 
 .badge-default {
-  background-color: #2d8cdf;
-  color: white;
+  background-color: #f6f3f4;
+  color: #364153;
 }
 
 .btn-download {
