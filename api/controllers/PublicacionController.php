@@ -176,19 +176,28 @@ class PublicacionController {
 
             $s3 = new Aws\S3\S3Client([
                 'version' => 'latest',
-                'region' => 'us-east-2',
+                'region' => $config['REGION'],
                 'credentials' => [
                     'key' => $config['AWS_KEY'],
                     'secret' => $config['AWS_SECRET']
                 ]
             ]);
 
+            // Detectar el tipo MIME del archivo
+            $mimeType = $_FILES['publicacionFile']['type'];
+            if(!$mimeType || $mimeType === 'application/octet-stream'){
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $_FILES['publicacionFile']['tmp_name']);
+                finfo_close($finfo);
+            }
+
             $resultS3 = $s3->putObject([
                 'Bucket' => $config['BUCKET'],
-                'Key' => 'notificaciones/' . $data['archivo'],
-                'Body' => 'body!',
+                'Key' => $config['BUCKET_FOLDER'] . '/' . $data['archivo'],
                 'SourceFile' => $_FILES['publicacionFile']['tmp_name'],
-                'ACL' => 'public-read'
+                'ACL' => 'public-read',
+                'ContentType' => $mimeType,
+                'ContentDisposition' => 'inline'
             ]);
 
             if ($result) {
@@ -251,12 +260,12 @@ class PublicacionController {
 
             // Preparar la consulta SQL
             $query = "UPDATE publicaciones 
-                     SET fecha = :fecha,
-                         fechapublicacion = :fechapublicacion,
-                         referencia = :referencia,
-                         estado = :estado,
-                         tipopublicacion_id = :tipopublicacion_id
-                     WHERE id = :id";
+                        SET fecha = :fecha,
+                            fechapublicacion = :fechapublicacion,
+                            referencia = :referencia,
+                            estado = :estado,
+                            tipopublicacion_id = :tipopublicacion_id
+                        WHERE id = :id";
             
             $stmt = $this->pdo->prepare($query);
             $result = $stmt->execute([
@@ -274,20 +283,29 @@ class PublicacionController {
                 $config = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config.php';
                 $s3 = new Aws\S3\S3Client([
                     'version' => 'latest',
-                    'region' => 'us-east-2',
+                    'region' => $config['REGION'],
                     'credentials' => [
                         'key' => $config['AWS_KEY'],
                         'secret' => $config['AWS_SECRET']
                     ]
                 ]);
-    
+                
+                // Detectar el tipo MIME del archivo
+                $mimeType = $_FILES['publicacionFile']['type'];
+                if(!$mimeType || $mimeType === 'application/octet-stream'){
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mimeType = finfo_file($finfo, $_FILES['publicacionFile']['tmp_name']);
+                    finfo_close($finfo);
+                }
+
                 // Usar el nombre de archivo existente
                 $resultS3 = $s3->putObject([
                     'Bucket' => $config['BUCKET'],
-                    'Key' => 'notificaciones/' . $data['archivo'], // Mantener el mismo nombre
-                    'Body' => 'body!',
+                    'Key' => $config['BUCKET_FOLDER'] . '/' . $data['archivo'], // Mantener el mismo nombre
                     'SourceFile' => $_FILES['publicacionFile']['tmp_name'],
-                    'ACL' => 'public-read'
+                    'ACL' => 'public-read',
+                    'ContentType' => $mimeType,
+                    'ContentDisposition' => 'inline'
                 ]);
             }
 
