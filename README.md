@@ -172,15 +172,16 @@ apiCuraduria2ca/
 ## Instalación y Despliegue
 
 1. Clonar el repositorio
-2. Configurar el archivo `api/config.php` con las credenciales de base de datos y AWS
+2. Para el backend Configurar el archivo `api/config.php` con las credenciales de base de datos y AWS
 3. Instalar dependencias: `composer install`
-4. Configurar el servidor web para que apunte a la carpeta raíz del proyecto
-5. Asegurar que el servidor web tiene permisos de escritura en las carpetas necesarias
+4. Para el frontend Configurar el archivo `front/js/env.php` con la url del entrypoint del backend `ventanilla.php` y la url del bucket a usar en AWS.
+5. Configurar el entorno a desplegar (`local` | `stage` | `prod`) en el archivo .htaccess `SetEnv APP_ENV stage`.
+6. Asegurar que el servidor web tiene permisos de escritura en las carpetas necesarias
 
 ## Tecnologías Utilizadas
 
 - Backend:
-  - PHP 7.4+
+  - PHP 8.2+
   - MySQL/MariaDB
   - AWS S3 para almacenamiento de archivos
 - Frontend:
