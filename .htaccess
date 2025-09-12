@@ -1,3 +1,24 @@
 <IfModule mod_env.c>
-  SetEnv APP_ENV stage
+  SetEnv APP_ENV prod
+</IfModule>
+
+# Habilitar el motor de reescritura
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # Capturar y pasar la cabecera Authorization a PHP
+  RewriteCond %{HTTP:Authorization} ^(.*)
+  RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+</IfModule>
+
+# Método alternativo para pasar Authorization header
+<IfModule mod_env.c>
+  SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
+# Configurar cabeceras CORS si es necesario (opcional, solo si tienes problemas de CORS)
+<IfModule mod_headers.c>
+  Header always set Access-Control-Allow-Origin "*"
+  Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE"
+  Header always set Access-Control-Allow-Headers "Authorization, Content-Type, X-Requested-With"
 </IfModule>

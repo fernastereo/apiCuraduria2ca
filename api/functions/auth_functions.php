@@ -25,8 +25,20 @@ function verifyValidToken($token) {
 
 // Función para extraer el token de la cabecera de autorización
 function getAuthToken() {
+    $auth_header = '';
+    
+    // Buscar en diferentes lugares donde podría estar la cabecera
     $headers = getallheaders();
-    $auth_header = $headers['Authorization'] ?? '';
+    
+    if (isset($headers['Authorization'])) {
+        $auth_header = $headers['Authorization'];
+    } elseif (isset($headers['authorization'])) { // algunos servidores lo pasan en minúsculas
+        $auth_header = $headers['authorization'];
+    } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $auth_header = $_SERVER['HTTP_AUTHORIZATION'];
+    } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
     
     if (empty($auth_header) || !preg_match('/Bearer\s+(.*)$/i', $auth_header, $matches)) {
         return false;

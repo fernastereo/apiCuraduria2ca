@@ -1,0 +1,66 @@
+name: 🚀 Deploy to Production
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+    types: [closed]
+
+jobs:
+  deploy:
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    name: 🚀 Deploy to Production
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔒 Create .env file
+        run: |
+          echo "DB_HOST=${{ secrets.DB_HOST }}" > .env
+          echo "PATH_AWS=${{ secrets.PATH_AWS }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+          echo "MAIL_TO=${{ secrets.MAIL_TO }}" >> .env
+          echo "MAIL_FROM=${{ secrets.MAIL_FROM }}" >> .env
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          echo "AWS_BUCKET=${{ secrets.AWS_BUCKET }}" >> .env
+          echo "AWS_BUCKET_FOLDER=${{ secrets.AWS_BUCKET_FOLDER }}" >> .env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+          echo "API_URL_FRONT=${{ secrets.API_URL_FRONT }}" >> .env
+          echo "APP_ENV=prod" >> .env
+
+      - name: 🚀 Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: /public_html/apicuraduria2ca/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            README.md
+            .gitignore
+
+      - name: ✅ Deployment Success
+        if: success()
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 Your site should be live at: https://publicaciones.curaduria2cartagena.com/apicuraduria2ca"
+          echo "🕐 Deployed at: $(date)"
+          echo "📝 Commit: ${{ github.sha }}"
+
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed"
+          echo "🔍 Check the logs above for details"
