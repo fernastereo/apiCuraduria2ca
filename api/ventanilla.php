@@ -67,6 +67,12 @@ $response = [
 
 // Enrutamiento de la API
 switch ($endpoint) {
+    case '':
+    case 'health-check':
+        if ($method === 'GET') {
+            $response = $healthController->healthCheck();
+        }
+        break;
     case 'register':
         if ($method === 'POST') {
             $response = $authController->register();
@@ -149,12 +155,6 @@ switch ($endpoint) {
                     $response = $catalogoController->getTiposPublicacion();
                     break;
             }
-        }
-        break;
-    
-    case 'health-check':
-        if ($method === 'GET') {
-            $response = $healthController->healthCheck();
         }
         break;
 
