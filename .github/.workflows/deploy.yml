@@ -19,22 +19,31 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - name: 📦 Install dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
       - name: 🔒 Create .env file
         run: |
-          echo "DB_HOST=${{ secrets.DB_HOST }}" > .env
-          echo "PATH_AWS=${{ secrets.PATH_AWS }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
-          echo "MAIL_TO=${{ secrets.MAIL_TO }}" >> .env
-          echo "MAIL_FROM=${{ secrets.MAIL_FROM }}" >> .env
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
-          echo "AWS_BUCKET=${{ secrets.AWS_BUCKET }}" >> .env
-          echo "AWS_BUCKET_FOLDER=${{ secrets.AWS_BUCKET_FOLDER }}" >> .env
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
-          echo "API_URL_FRONT=${{ secrets.API_URL_FRONT }}" >> .env
-          echo "APP_ENV=prod" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" > api/.env
+          echo "PATH_AWS=${{ secrets.PATH_AWS }}" >> api/.env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> api/.env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> api/.env
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> api/.env
+          echo "MAIL_TO=${{ secrets.MAIL_TO }}" >> api/.env
+          echo "MAIL_FROM=${{ secrets.MAIL_FROM }}" >> api/.env
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> api/.env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> api/.env
+          echo "AWS_BUCKET=${{ secrets.AWS_BUCKET }}" >> api/.env
+          echo "AWS_BUCKET_FOLDER=${{ secrets.AWS_BUCKET_FOLDER }}" >> api/.env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> api/.env
+          echo "API_URL_FRONT=${{ secrets.API_URL_FRONT }}" >> api/.env
+          echo "APP_ENV=prod" >> api/.env
 
       - name: 🚀 Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -50,6 +59,10 @@ jobs:
             .github/**
             README.md
             .gitignore
+            .env.example
+            .env.testing
+            composer.json
+            composer.lock
 
       - name: ✅ Deployment Success
         if: success()
