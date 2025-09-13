@@ -13,7 +13,7 @@ jobs:
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
-    name: 🚀 Deploy to Production (Curaduria 2 Cartagena)
+    name: 🚀 Deploy to curaduria2cartagena.com
     
     steps:
       - name: 📥 Checkout code
@@ -76,7 +76,7 @@ jobs:
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
-    name: 🚀 Deploy to Production (Server Fernando Cueto)
+    name: 🚀 Deploy to fernandocueto.com
     
     steps:
       - name: 📥 Checkout code
