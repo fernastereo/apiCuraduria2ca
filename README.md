@@ -1,190 +1,229 @@
+# Curaduria 2 Cartagena API
+
+REST API for managing publications and files for Curaduria 2 Cartagena.
+
+⭐ If you find this project helpful, please consider giving it a star!
+
+## 🚀 Features
+
+- User Authentication (JWT)
+- File Records Management
+- Publication System
+- AWS S3 Integration for File Storage
+- Environment-based Configuration
+- CORS Support
+- Health Check Endpoint
+
+## 📋 Requirements
+
+- PHP 8.2+
+- MySQL/MariaDB
+- Apache with mod_rewrite enabled
+- Composer (for development)
+
+## 🛠️ Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/apiCuraduria2ca.git
+```
+
+2. Set up your environment variables by copying the example file:
+```bash
+cp api/.env.example api/.env
+```
+
+3. Configure your `.env` file with your credentials:
+```env
+DB_HOST=your_host
+DB_NAME=your_database
+DB_USER=your_user
+DB_PASS=your_password
+PATH_AWS=your_aws_url
+MAIL_TO=notifications@email.com
+MAIL_FROM=sender@email.com
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_BUCKET=your_bucket
+AWS_BUCKET_FOLDER=your_folder
+AWS_REGION=your_region
+API_URL_FRONT=your_api_url
+APP_ENV=prod
+```
+
+## 🔄 API Endpoints
+
+### Public Endpoints (No Authentication Required)
+- `GET /` or `/health-check` - System health check and API information
+- `POST /login` - User login
+- `GET /expedientes` - Query record by ID and year
+- `GET /publicaciones` - List all publications
+- `GET /publicaciones/{id}` - Get publication by ID
+- `GET /publicaciones?fecha_inicio=&fecha_fin=` - Search by date range
+- `GET /tipos-publicacion` - List publication types
+- `GET /tipos-publicacion/{id}` - Get publication type by ID
+
+### Protected Endpoints (Authentication Required)
+All protected endpoints require a valid JWT token in the Authorization header: `Authorization: Bearer {your_token}`
+
+#### Authentication
+- `POST /register` - Register new user
+- `GET /verify-token` - Verify JWT token
+- `POST /logout` - User logout
+
+#### Publications Management
+- `POST /publicaciones` - Create new publication
+- `PUT /publicaciones/{id}` - Update publication
+- `DELETE /publicaciones/{id}` - Delete publication
+
+## 🚀 Deployment
+
+The project uses GitHub Actions for automated deployment. The workflow:
+
+1. Triggers on:
+   - Push to main/master
+   - Merged pull requests to main/master
+
+2. Deployment process:
+   - Checks out the code
+   - Creates production .env file
+   - Deploys via FTP to production server
+
+Required GitHub Secrets for deployment:
+- `FTP_HOST`
+- `FTP_USERNAME`
+- `FTP_PASSWORD`
+- All environment variables listed in the Installation section
+
+## 🔒 Security
+
+- JWT for API authentication
+- CORS headers configured
+- Environment-based configuration
+- Secure file handling
+- AWS S3 for secure file storage
+
+## 🌐 Environment Support
+
+The API supports multiple environments:
+- `local` - Development
+- `stage` - Staging
+- `prod` - Production
+
+Each environment can have its own `.env.{environment}` file.
+
+---
+
 # API Curaduría 2 Cartagena
 
-API y Frontend para servicios de la Curaduría 2 de Cartagena.
+API REST para la gestión de publicaciones y archivos de la Curaduría 2 de Cartagena.
 
-## Estructura del Proyecto
+⭐ Si encuentras útil este proyecto, ¡considera darle una estrella!
 
+## 🚀 Características
+
+- Autenticación de Usuarios (JWT)
+- Gestión de Expedientes
+- Sistema de Publicaciones
+- Integración con AWS S3 para Almacenamiento
+- Configuración basada en Entornos
+- Soporte CORS
+- Endpoint de Verificación de Salud
+
+## 📋 Requisitos
+
+- PHP 8.2+
+- MySQL/MariaDB
+- Apache con mod_rewrite habilitado
+- Composer (para desarrollo)
+
+## 🛠️ Instalación
+
+1. Clonar el repositorio:
+```bash
+git clone https://github.com/tuusuario/apiCuraduria2ca.git
 ```
-apiCuraduria2ca/
-├── api/                # Backend API
-│   ├── controllers/    # Controladores de la API
-│   ├── config/         # Configuración de base de datos y variables
-│   ├── functions/      # Funciones auxiliares
-│   └── ventanilla.php  # Punto de entrada principal de la API
-├── front/              # Frontend
-│   ├── css/            # Estilos
-│   ├── js/             # Scripts
-│   └── *.html          # Páginas HTML
-└── vendor/             # Dependencias de Composer
+
+2. Configurar variables de entorno copiando el archivo de ejemplo:
+```bash
+cp api/.env.example api/.env
 ```
 
-## Endpoints de la API
+3. Configurar el archivo `.env` con tus credenciales:
+```env
+DB_HOST=tu_host
+DB_NAME=tu_base_de_datos
+DB_USER=tu_usuario
+DB_PASS=tu_contraseña
+PATH_AWS=tu_url_aws
+MAIL_TO=notificaciones@email.com
+MAIL_FROM=remitente@email.com
+AWS_ACCESS_KEY_ID=tu_clave_aws
+AWS_SECRET_ACCESS_KEY=tu_secreto_aws
+AWS_BUCKET=tu_bucket
+AWS_BUCKET_FOLDER=tu_carpeta
+AWS_REGION=tu_region
+API_URL_FRONT=tu_url_api
+APP_ENV=prod
+```
 
-### Autenticación
+## 🔄 Endpoints de la API
 
-#### Login
-- **URL**: `/login`
-- **Método**: `POST`
-- **Descripción**: Autenticar usuario
-- **Respuesta exitosa**: Token JWT
-- **Auth requerida**: No
+### Endpoints Públicos (No Requieren Autenticación)
+- `GET /` o `/health-check` - Verificación de salud del sistema e información de la API
+- `POST /login` - Inicio de sesión
+- `GET /expedientes` - Consultar expediente por ID y año
+- `GET /publicaciones` - Listar todas las publicaciones
+- `GET /publicaciones/{id}` - Obtener publicación por ID
+- `GET /publicaciones?fecha_inicio=&fecha_fin=` - Buscar por rango de fechas
+- `GET /tipos-publicacion` - Listar tipos de publicación
+- `GET /tipos-publicacion/{id}` - Obtener tipo de publicación por ID
 
-#### Registro
-- **URL**: `/register`
-- **Método**: `POST`
-- **Descripción**: Registrar nuevo usuario
-- **Auth requerida**: No
+### Endpoints Protegidos (Requieren Autenticación)
+Todos los endpoints protegidos requieren un token JWT válido en el encabezado Authorization: `Authorization: Bearer {tu_token}`
 
-#### Verificar Token
-- **URL**: `/verify-token`
-- **Método**: `GET`
-- **Descripción**: Verificar validez del token JWT
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Auth requerida**: Sí
+#### Autenticación
+- `POST /register` - Registro de usuario
+- `GET /verify-token` - Verificar token JWT
+- `POST /logout` - Cerrar sesión
 
-#### Logout
-- **URL**: `/logout`
-- **Método**: `POST`
-- **Descripción**: Cerrar sesión
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Auth requerida**: Sí
+#### Gestión de Publicaciones
+- `POST /publicaciones` - Crear nueva publicación
+- `PUT /publicaciones/{id}` - Actualizar publicación
+- `DELETE /publicaciones/{id}` - Eliminar publicación
 
-#### Información de Usuario
-- **URL**: `/user`
-- **Método**: `GET`
-- **Descripción**: Obtener información del usuario actual
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Auth requerida**: Sí
+## 🚀 Despliegue
 
-### Expedientes
+El proyecto usa GitHub Actions para despliegue automatizado. El workflow:
 
-#### Consultar Expediente
-- **URL**: `/expedientes`
-- **Método**: `GET`
-- **Parámetros**:
-  - `idradicado`: Número de radicado
-  - `vigencia`: Año del expediente
-- **Ejemplo**: `/expedientes?idradicado=1&vigencia=2024`
-- **Respuesta**: Información detallada del expediente incluyendo:
-  - Número de Expediente (formato: 13001-2-24-0001)
-  - Solicitante
-  - Dirección y Barrio
-  - Tipo de Licencia
-  - Modalidad
-  - Estado
-  - Fechas de radicación y última actualización
-- **Auth requerida**: No
+1. Se activa con:
+   - Push a main/master
+   - Pull requests fusionados en main/master
 
-### Publicaciones
+2. Proceso de despliegue:
+   - Obtiene el código
+   - Crea archivo .env de producción
+   - Despliega vía FTP al servidor de producción
 
-#### Listar Publicaciones
-- **URL**: `/publicaciones`
-- **Método**: `GET`
-- **Descripción**: Obtener todas las publicaciones
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Auth requerida**: Sí
+Secretos requeridos en GitHub para el despliegue:
+- `FTP_HOST`
+- `FTP_USERNAME`
+- `FTP_PASSWORD`
+- Todas las variables de entorno listadas en la sección de Instalación
 
-#### Buscar por Rango de Fechas
-- **URL**: `/publicaciones`
-- **Método**: `GET`
-- **Parámetros**:
-  - `fecha_inicio`: Fecha inicial (YYYY-MM-DD)
-  - `fecha_fin`: Fecha final (YYYY-MM-DD)
-- **Ejemplo**: `/publicaciones?fecha_inicio=2024-01-01&fecha_fin=2024-12-31`
-- **Auth requerida**: No
+## 🔒 Seguridad
 
-#### Obtener Publicación
-- **URL**: `/publicaciones/{id}`
-- **Método**: `GET`
-- **Descripción**: Obtener una publicación específica
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Auth requerida**: Sí
+- JWT para autenticación de API
+- Cabeceras CORS configuradas
+- Configuración basada en entorno
+- Manejo seguro de archivos
+- AWS S3 para almacenamiento seguro
 
-#### Crear Publicación
-- **URL**: `/publicaciones`
-- **Método**: `POST`
-- **Formato**: `multipart/form-data`
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Parámetros**:
-  - `fecha`: Fecha del documento
-  - `fechapublicacion`: Fecha de publicación
-  - `referencia`: Referencia del documento
-  - `estado`: Estado de la publicación
-  - `tipopublicacion_id`: ID del tipo de publicación
-  - `publicacionFile`: Archivo PDF
-- **Auth requerida**: Sí
+## 🌐 Soporte de Entornos
 
-#### Actualizar Publicación
-- **URL**: `/publicaciones/{id}`
-- **Método**: `POST`
-- **Headers**: 
-  - `Content-Type: multipart/form-data`
-  - `Authorization: Bearer {token}`
-- **Parámetros**:
-  - `_method`: 'PUT' (requerido)
-  - Demás campos igual que en crear
-- **Auth requerida**: Sí
+La API soporta múltiples entornos:
+- `local` - Desarrollo
+- `stage` - Pruebas
+- `prod` - Producción
 
-#### Eliminar Publicación
-- **URL**: `/publicaciones/{id}`
-- **Método**: `DELETE`
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Auth requerida**: Sí
-
-### Tipos de Publicación
-
-#### Listar Tipos
-- **URL**: `/tipos-publicacion`
-- **Método**: `GET`
-- **Descripción**: Obtener lista de tipos de publicación
-- **Auth requerida**: No
-
-#### Obtener Tipo
-- **URL**: `/tipos-publicacion/{id}`
-- **Método**: `GET`
-- **Descripción**: Obtener un tipo de publicación específico
-- **Headers requeridos**: `Authorization: Bearer {token}`
-- **Auth requerida**: Sí
-
-## Frontend
-
-### Páginas Disponibles
-
-#### Consulta de Expedientes
-- **Archivo**: `estado-expediente.html`
-- **Funcionalidad**: Consulta de estado de expedientes por número y año
-- **Características**:
-  - Formulario de búsqueda
-  - Visualización detallada de información
-  - Manejo de errores y estados de carga
-  - Formato especial para número de radicación
-
-#### Publicaciones
-- **Archivo**: `publicaciones.html`
-- **Funcionalidad**: Gestión y consulta de publicaciones
-- **Características**:
-  - Búsqueda por rango de fechas
-  - Paginación del lado del cliente (10 registros por página)
-  - Descarga de documentos
-  - Estilos tipo badge para tipos de publicación
-
-
-## Instalación y Despliegue
-
-1. Clonar el repositorio
-2. Para el backend Configurar el archivo `api/config.php` con las credenciales de base de datos y AWS
-3. Instalar dependencias: `composer install`
-4. Para el frontend Configurar el archivo `front/js/env.php` con la url del entrypoint del backend `ventanilla.php` y la url del bucket a usar en AWS.
-5. Configurar el entorno a desplegar (`local` | `stage` | `prod`) en el archivo .htaccess `SetEnv APP_ENV stage`.
-6. Asegurar que el servidor web tiene permisos de escritura en las carpetas necesarias
-
-## Tecnologías Utilizadas
-
-- Backend:
-  - PHP 8.2+
-  - MySQL/MariaDB
-  - AWS S3 para almacenamiento de archivos
-- Frontend:
-  - Vue.js 3
-  - HTML5/CSS3
-  - Font Awesome para iconos
+Cada entorno puede tener su propio archivo `.env.{entorno}`.
