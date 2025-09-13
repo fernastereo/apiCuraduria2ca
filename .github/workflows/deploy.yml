@@ -8,7 +8,7 @@ on:
     types: [closed]
 
 jobs:
-  deploy:
+  deploy-server-curaduria2cartagena:
     if: |
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
@@ -36,7 +36,7 @@ jobs:
           echo "API_URL_FRONT=${{ secrets.API_URL_FRONT }}" >> api/.env
           echo "APP_ENV=prod" >> api/.env
 
-      - name: 🚀 Deploy via FTP
+      - name: 🚀 Deploy via FTP TO curaduria2cartagena.com
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -62,6 +62,69 @@ jobs:
         run: |
           echo "🎉 Deployment completed successfully!"
           echo "🌐 The API should be live at: https://publicaciones.curaduria2cartagena.com/apicuraduria2ca/api/ventanilla.php"
+          echo "🕐 Deployed at: $(date)"
+          echo "📝 Commit: ${{ github.sha }}"
+
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed"
+          echo "🔍 Check the logs above for details"
+  
+  deploy-server-fernandocueto:
+    if: | 
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    name: 🚀 Deploy to Production
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔒 Create .env file
+        run: |
+          echo "DB_HOST=${{ secrets.FC_DB_HOST }}" > api/.env
+          echo "PATH_AWS=${{ secrets.FC_PATH_AWS }}" >> api/.env
+          echo "DB_NAME=${{ secrets.FC_DB_NAME }}" >> api/.env
+          echo "DB_USER=${{ secrets.FC_DB_USER }}" >> api/.env
+          echo "DB_PASS=${{ secrets.FC_DB_PASS }}" >> api/.env
+          echo "MAIL_TO=${{ secrets.FC_MAIL_TO }}" >> api/.env
+          echo "MAIL_FROM=${{ secrets.FC_MAIL_FROM }}" >> api/.env
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.FC_AWS_ACCESS_KEY_ID }}" >> api/.env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.FC_AWS_SECRET_ACCESS_KEY }}" >> api/.env
+          echo "AWS_BUCKET=${{ secrets.FC_AWS_BUCKET }}" >> api/.env
+          echo "AWS_BUCKET_FOLDER=${{ secrets.FC_AWS_BUCKET_FOLDER }}" >> api/.env
+          echo "AWS_REGION=${{ secrets.FC_AWS_REGION }}" >> api/.env
+          echo "API_URL_FRONT=${{ secrets.FC_API_URL_FRONT }}" >> api/.env
+          echo "APP_ENV=prod" >> api/.env
+
+      - name: 🚀 Deploy via FTP to projects.fernandocueto.com
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FC_FTP_HOST }}
+          username: ${{ secrets.FC_FTP_USERNAME }}
+          password: ${{ secrets.FC_FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: /projects.fernandocueto.com/apicuraduria2ca
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            README.md
+            .gitignore
+            .env.example
+            .env.testing
+            composer.json
+            composer.lock
+            vendor/**
+            vendor/
+
+      - name: ✅ Deployment Success
+        if: success()
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 The API should be live at: https://projects.fernandocueto.com/apicuraduria2ca/api/ventanilla.php"
           echo "🕐 Deployed at: $(date)"
           echo "📝 Commit: ${{ github.sha }}"
 

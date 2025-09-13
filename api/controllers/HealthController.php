@@ -13,7 +13,7 @@ class HealthController {
     public function healthCheck() {
         return [
             'status' => 'success',
-            'message' => 'API Curaduría 2 Cartagena',
+            'message' => 'API Curaduría No. 2 Cartagena',
             'version' => '1.0',
             'database' => $this->db,
             'environment' => $this->env,
