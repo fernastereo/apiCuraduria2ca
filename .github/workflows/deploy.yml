@@ -19,15 +19,6 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐘 Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          tools: composer:v2
-
-      - name: 📦 Install dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction
-
       - name: 🔒 Create .env file
         run: |
           echo "DB_HOST=${{ secrets.DB_HOST }}" > api/.env
@@ -63,12 +54,14 @@ jobs:
             .env.testing
             composer.json
             composer.lock
+            vendor/**
+            vendor/
 
       - name: ✅ Deployment Success
         if: success()
         run: |
           echo "🎉 Deployment completed successfully!"
-          echo "🌐 Your site should be live at: https://publicaciones.curaduria2cartagena.com/apicuraduria2ca"
+          echo "🌐 The API should be live at: https://publicaciones.curaduria2cartagena.com/apicuraduria2ca/api/ventanilla.php"
           echo "🕐 Deployed at: $(date)"
           echo "📝 Commit: ${{ github.sha }}"
 
