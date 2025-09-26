@@ -106,7 +106,7 @@ jobs:
           username: ${{ secrets.FC_FTP_USERNAME }}
           password: ${{ secrets.FC_FTP_PASSWORD }}
           local-dir: ./
-          server-dir: /projects.fernandocueto.com/apicuraduria2ca/
+          server-dir: /projects.fernandocueto.com/2ca/apicuraduria2ca/
           exclude: |
             **/.git*
             **/.git*/**
@@ -124,7 +124,7 @@ jobs:
         if: success()
         run: |
           echo "🎉 Deployment completed successfully!"
-          echo "🌐 The API should be live at: https://projects.fernandocueto.com/apicuraduria2ca/api/ventanilla.php"
+          echo "🌐 The API should be live at: https://projects.fernandocueto.com/2ca/apicuraduria2ca/api/ventanilla.php"
           echo "🕐 Deployed at: $(date)"
           echo "📝 Commit: ${{ github.sha }}"
 
